@@ -36,13 +36,21 @@ try {
         throw new Exception('게임 정보를 찾을 수 없습니다.');
     }
     
+    // 최대 플레이어 번호 확인 (마지막 순번)
+    $stmt = $conn->prepare("SELECT MAX(player_number) FROM players WHERE logined = 1");
+    $stmt->execute();
+    $maxPlayerNumber = $stmt->fetchColumn();
+    
     $isMyTurn = ($currentTurn == $playerNumber);
+    $isLastPlayer = ($playerNumber == $maxPlayerNumber);
     
     echo json_encode([
         'success' => true, 
         'game_started' => true,
         'is_my_turn' => $isMyTurn,
-        'current_turn' => $currentTurn
+        'is_last_player' => $isLastPlayer,
+        'current_turn' => $currentTurn,
+        'max_player_number' => $maxPlayerNumber
     ]);
     
 } catch (Exception $e) {

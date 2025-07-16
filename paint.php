@@ -396,6 +396,8 @@
         let currentRound = 1;
         let turnCheckInterval = null;
         let isGameActive = false;
+        let isLastPlayer = false;
+        let maxPlayerNumber = 0;
         
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
@@ -665,12 +667,20 @@
                     }
                     
                     // 게임이 시작된 상태
+                    isLastPlayer = data.is_last_player;
+                    maxPlayerNumber = data.max_player_number;
+                    
+                    console.log(`플레이어 ${playerNumber}번 - 마지막 순번: ${isLastPlayer} (총 ${maxPlayerNumber}명)`);
+                    
                     if (data.is_my_turn) {
                         // 내 턴이면
                         isGameActive = true;
                         stopTurnPolling(); // 폴링 중단
                         
-                        if (playerNumber > 1) {
+                        if (isLastPlayer) {
+                            // 마지막 플레이어는 제시어 입력
+                            showAnswerInput();
+                        } else if (playerNumber > 1) {
                             // 2번 이상이면 이전 그림 보여주기
                             showPreviousDrawingAndStart();
                         }
@@ -728,6 +738,7 @@
                             showConfirmButton: false
                         }).then(() => {
                             startCountdown(10);
+                            enableDrawing(); // 그리기 활성화!
                         });
                     });
                 } else {
@@ -739,7 +750,88 @@
             });
         }
         
-        // 대기 화면 표시
+        // 제시어 입력 화면 (마지막 플레이어용)
+        function showAnswerInput() {
+            Swal.close(); // 기존 대기 화면 닫기
+            
+            fetch('get_previous_drawing.php?player_number=' + playerNumber + '&round_number=' + currentRound)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // SweetAlert 안에 이미지와 입력 폼 표시
+                    Swal.fire({
+                        title: '제시어를 맞춰주세요!',
+                        html: `
+                            <div style="text-align: center;">
+                                <p style="margin-bottom: 15px; font-size: 16px; color: #333;">이 그림이 나타내는 제시어를 입력해주세요!</p>
+                                <div style="border: 3px solid #e0e0e0; border-radius: 10px; overflow: hidden; display: inline-block; background: white; margin-bottom: 20px;">
+                                    <img src="${data.drawing_data}" style="max-width: 400px; max-height: 300px; display: block;" />
+                                </div>
+                                <input type="text" id="answerInput" placeholder="제시어를 입력하세요..." style="width: 300px; padding: 12px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 8px; outline: none;" />
+                            </div>
+                        `,
+                        icon: null,
+                        showCancelButton: false,
+                        confirmButtonText: '제출',
+                        confirmButtonColor: '#4ecdc4',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        width: '550px',
+                        background: '#fff',
+                        backdrop: 'rgba(0,0,0,0.8)',
+                        preConfirm: () => {
+                            const answer = document.getElementById('answerInput').value.trim();
+                            if (!answer) {
+                                Swal.showValidationMessage('제시어를 입력해주세요!');
+                                return false;
+                            }
+                            return answer;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            checkAnswer(result.value);
+                        }
+                    });
+                    
+                    // 입력 필드에 포커스
+                    setTimeout(() => {
+                        const input = document.getElementById('answerInput');
+                        if (input) {
+                            input.focus();
+                            // Enter 키로 제출 가능하도록
+                            input.addEventListener('keypress', function(e) {
+                                if (e.key === 'Enter') {
+                                    Swal.clickConfirm();
+                                }
+                            });
+                        }
+                    }, 100);
+                } else {
+                    console.error('이전 그림 가져오기 실패:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('이전 그림 가져오기 오류:', error);
+            });
+        }
+        
+        // 제시어 정답 체크
+        function checkAnswer(userAnswer) {
+            // TODO: 서버로 정답 체크 요청
+            console.log('사용자 답안:', userAnswer);
+            
+            Swal.fire({
+                title: '답안 제출 완료!',
+                text: '답안: "' + userAnswer + '"',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                // 게임 완료 후 대기 상태로 전환
+                isGameActive = false;
+                showWaitingScreen();
+            });
+        }
         function showWaitingScreen() {
             disableDrawing();
             
@@ -819,6 +911,7 @@
                             }).then(() => {
                                 // 10초 카운트다운 시작
                                 startCountdown(10);
+                                enableDrawing(); // 그리기 활성화!
                             });
                         });
                     } else {

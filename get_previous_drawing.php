@@ -15,7 +15,7 @@ try {
     $previousPlayer = $playerNumber - 1;
     
     if ($previousPlayer > 0) {
-        $stmt = $conn->prepare("SELECT drawing_data FROM game_rounds WHERE round_number = ? AND player_number = ?");
+        $stmt = $conn->prepare("SELECT drawing_data FROM game_rounds WHERE round_number = ? AND player_number = ? order by id desc");
         $stmt->execute([$roundNumber, $previousPlayer]);
         $drawingData = $stmt->fetchColumn();
         
