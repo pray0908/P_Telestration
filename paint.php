@@ -400,6 +400,8 @@
         let maxPlayerNumber = 0;
         let gameCompletedProcessed = false; // 게임 완료 처리 플래그
         let lastGameId = null; // 마지막 게임 ID 추적
+        let gameCompleteExecuted = false; // gameComplete 실행 방지 플래그
+        let isAnswerSubmitter = false; // 정답 제출자 여부 (중복 방지용)
         
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
@@ -687,18 +689,35 @@
                     // 게임 완료 체크
                     if (data.game_completed) {
                         console.log('게임 완료 감지!');
+                        console.log(`현재 lastGameId: ${lastGameId} (타입: ${typeof lastGameId})`);
+                        console.log(`새 game_id: ${data.game_id} (타입: ${typeof data.game_id})`);
                         
-                        // 이미 게임 완료를 처리했다면 무시
+                        // 타입 통일 (문자열로 변환하여 비교)
+                        const currentGameId = String(data.game_id);
+                        const savedGameId = String(lastGameId || '');
+                        
+                        console.log(`비교: ${savedGameId} === ${currentGameId} → ${savedGameId === currentGameId}`);
+                        
+                        // 이미 처리한 게임 ID면 무시
+                        if (lastGameId && savedGameId === currentGameId) {
+                            console.log(`게임 완료 이미 처리됨 - 무시 (game_id: ${currentGameId})`);
+                            return;
+                        }
+                        
+                        // 이미 게임 완료를 처리했다면 무시 (추가 보호)
                         if (gameCompletedProcessed) {
-                            console.log('게임 완료 이미 처리됨 - 무시');
+                            console.log('게임 완료 이미 처리됨 - 무시 (플래그)');
                             return;
                         }
                         
                         // 게임 완료 플래그 설정 및 게임 ID 저장
                         gameCompletedProcessed = true;
-                        lastGameId = data.game_id;
+                        lastGameId = currentGameId; // 문자열로 저장
                         stopTurnPolling();
                         isGameActive = false;
+                        
+                        console.log(`게임 완료 처리 시작 (game_id: ${currentGameId})`);
+                        console.log(`lastGameId 설정됨: ${lastGameId}`);
                         
                         // 모든 플레이어에게 결과 표시
                         if (data.is_correct) {
@@ -713,6 +732,7 @@
                     if (gameCompletedProcessed && data.game_id && data.game_id !== lastGameId) {
                         console.log(`플레이어 ${playerNumber}: 새 게임 감지! (이전 ID: ${lastGameId}, 새 ID: ${data.game_id})`);
                         gameCompletedProcessed = false;
+                        gameCompleteExecuted = false; // 새 게임이므로 초기화
                         lastGameId = data.game_id;
                         isGameActive = false;
                     }
@@ -722,6 +742,7 @@
                     if (gameCompletedProcessed) {
                         console.log(`플레이어 ${playerNumber}: 새 게임 진행 중 - 플래그 초기화`);
                         gameCompletedProcessed = false;
+                        gameCompleteExecuted = false;
                     }
                     
                     isLastPlayer = data.is_last_player;
@@ -890,6 +911,9 @@
         
         // 제시어 정답 체크
         function checkAnswer(userAnswer) {
+            // 정답 제출자 플래그 설정 (중복 방지용)
+            isAnswerSubmitter = true;
+            
             // 서버로 정답 체크 요청
             fetch('check_answer.php', {
                 method: 'POST',
@@ -904,6 +928,9 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    console.log(`플레이어 ${playerNumber}: 정답 제출자로서 직접 이펙트 표시`);
+                    
+                    // 정답 제출자는 바로 이펙트 표시
                     if (data.is_correct) {
                         showSuccessEffect(data.correct_answer, data.user_answer);
                     } else {
@@ -979,9 +1006,11 @@
                         overlay.remove();
                         console.log('성공 오버레이 제거됨');
                         enableDrawing(); // 그리기 다시 활성화
+                        
+                        // 이펙트 완료 후 gameComplete 호출
+                        gameComplete();
                     }, 500);
                 }
-                gameComplete();
             }, 4000);
         }
         
@@ -1034,9 +1063,11 @@
                         overlay.remove();
                         console.log('실패 오버레이 제거됨');
                         enableDrawing(); // 그리기 다시 활성화
+                        
+                        // 이펙트 완료 후 gameComplete 호출
+                        gameComplete();
                     }, 500);
                 }
-                gameComplete();
             }, 4000);
         }
         
@@ -1132,7 +1163,16 @@
         
         // 게임 완료 처리
         function gameComplete() {
+            // 이미 실행되었다면 무시
+            if (gameCompleteExecuted) {
+                console.log(`플레이어 ${playerNumber}: gameComplete 이미 실행됨 - 무시`);
+                return;
+            }
+            
+            gameCompleteExecuted = true;
             isGameActive = false;
+            
+            console.log(`플레이어 ${playerNumber}: gameComplete 실행 시작`);
             
             // 모든 대기 화면 닫기
             Swal.close();
@@ -1153,22 +1193,20 @@
                     // 게임 완료 후 처리
                     console.log(`플레이어 ${playerNumber}: 게임 완료 - 상태 초기화`);
                     
-                    // 상태 초기화
+                    // 상태 초기화 (gameCompletedProcessed는 유지)
                     isGameActive = false;
                     isLastPlayer = false;
                     maxPlayerNumber = 0;
                     currentRound = 1;
-                    // gameCompletedProcessed와 lastGameId는 새 게임 감지까지 유지
-                    
-                    // 1번이 아닌 경우에만 새 게임 감지를 위한 폴링 시작
-                    if (playerNumber !== 1) {
-                        console.log(`플레이어 ${playerNumber}: 새 게임 감지를 위한 폴링 시작`);
-                        startTurnPolling();
-                    } else {
-                        console.log(`플레이어 ${playerNumber}: 방장이므로 새 게임 시작 대기`);
-                    }
+                    gameCompleteExecuted = false; // 다음 게임을 위해 초기화
+                    // gameCompletedProcessed와 lastGameId는 새 게임 시작까지 유지
                     
                     console.log(`플레이어 ${playerNumber}: 다음 게임 시작 대기`);
+                    
+                    // 폴링 재시작을 지연시켜 중복 감지 방지
+                    setTimeout(() => {
+                        restartPollingForNextGame();
+                    }, 3000); // 3초 지연
                 });
             }, 1000);
         }
