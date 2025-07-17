@@ -1,0 +1,32 @@
+USE [TelestrationGame]
+GO
+
+/****** Object:  Table [dbo].[topics]    Script Date: 2025-07-17 오전 10:01:35 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[topics](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[text] [nvarchar](50) NULL,
+	[difficulty] [nvarchar](10) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+ALTER TABLE [dbo].[topics] ADD  DEFAULT ('medium') FOR [difficulty]
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'제시어' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'topics', @level2type=N'COLUMN',@level2name=N'text'
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'난이도' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'topics', @level2type=N'COLUMN',@level2name=N'difficulty'
+GO
+
+

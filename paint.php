@@ -817,21 +817,199 @@
         
         // 제시어 정답 체크
         function checkAnswer(userAnswer) {
-            // TODO: 서버로 정답 체크 요청
-            console.log('사용자 답안:', userAnswer);
-            
-            Swal.fire({
-                title: '답안 제출 완료!',
-                text: '답안: "' + userAnswer + '"',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                // 게임 완료 후 대기 상태로 전환
-                isGameActive = false;
-                showWaitingScreen();
+            // 서버로 정답 체크 요청
+            fetch('check_answer.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    answer: userAnswer,
+                    player_number: playerNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_correct) {
+                        showSuccessEffect(data.correct_answer, data.user_answer);
+                    } else {
+                        showFailureEffect(data.correct_answer, data.user_answer);
+                    }
+                } else {
+                    Swal.fire({
+                        title: '오류',
+                        text: data.error,
+                        icon: 'error'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: '오류',
+                    text: '정답 체크 중 오류가 발생했습니다.',
+                    icon: 'error'
+                });
             });
         }
+        
+        // 정답 성공 이펙트
+        function showSuccessEffect(correctAnswer, userAnswer) {
+            Swal.close();
+            
+            // 성공 오버레이 생성
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(45deg, #00c851, #007e33);
+                z-index: 99999;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-family: 'Fredoka One', cursive;
+                animation: celebrationSlideIn 0.5s ease-out;
+            `;
+            
+            overlay.innerHTML = `
+                <div id="fireworksContainer" style="position: absolute; width: 100%; height: 100%; pointer-events: none;"></div>
+                <div style="font-size: 4rem; margin-bottom: 20px; animation: bounceIn 1s ease-out;">🎉 정답! 🎉</div>
+                <div style="font-size: 1.5rem; margin-bottom: 10px; animation: fadeInUp 1s ease-out 0.3s both;">축하합니다!</div>
+                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.6s both;">정답: "${correctAnswer}"</div>
+                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.9s both;">답안: "${userAnswer}"</div>
+            `;
+            
+            document.body.appendChild(overlay);
+            console.log('성공 오버레이 생성됨:', overlay);
+            
+            // 불꽃놀이 이펙트
+            createFireworks();
+            
+            // 3초 후 제거
+            setTimeout(() => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                    console.log('성공 오버레이 제거됨');
+                }
+                gameComplete();
+            }, 3000);
+        }
+        
+        // 오답 실패 이펙트
+        function showFailureEffect(correctAnswer, userAnswer) {
+            Swal.close();
+            
+            // 실패 오버레이 생성
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(45deg, #ff4757, #c44569);
+                z-index: 99999;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                color: white;
+                font-family: 'Fredoka One', cursive;
+                animation: failureSlideIn 0.5s ease-out;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="font-size: 4rem; margin-bottom: 20px; animation: bounceIn 1s ease-out;">😅 아쉬워요!</div>
+                <div style="font-size: 1.5rem; margin-bottom: 10px; animation: fadeInUp 1s ease-out 0.3s both;">하지만 잘 했어요!</div>
+                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.6s both;">정답: "${correctAnswer}"</div>
+                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.9s both;">답안: "${userAnswer}"</div>
+            `;
+            
+            document.body.appendChild(overlay);
+            console.log('실패 오버레이 생성됨:', overlay);
+            
+            // 3초 후 제거
+            setTimeout(() => {
+                if (overlay && overlay.parentNode) {
+                    overlay.remove();
+                    console.log('실패 오버레이 제거됨');
+                }
+                gameComplete();
+            }, 3000);
+        }
+        
+        // 불꽃놀이 생성
+        function createFireworks() {
+            const container = document.getElementById('fireworksContainer');
+            if (!container) {
+                console.log('불꽃놀이 컨테이너를 찾을 수 없음');
+                return;
+            }
+            
+            console.log('불꽃놀이 시작');
+            
+            // 여러 개의 불꽃 생성
+            for (let i = 0; i < 15; i++) {
+                setTimeout(() => {
+                    const firework = document.createElement('div');
+                    firework.style.cssText = `
+                        position: absolute;
+                        width: 20px;
+                        height: 20px;
+                        background: radial-gradient(circle, ${getRandomColor()}, transparent);
+                        border-radius: 50%;
+                        left: ${Math.random() * 100}%;
+                        top: ${Math.random() * 100}%;
+                        animation: fireworkExplode 2s ease-out infinite;
+                    `;
+                    
+                    container.appendChild(firework);
+                    
+                    // 애니메이션 완료 후 제거
+                    setTimeout(() => {
+                        if (firework && firework.parentNode) {
+                            firework.remove();
+                        }
+                    }, 2000);
+                }, i * 200);
+            }
+        }
+        
+        // 랜덤 컬러 생성
+        function getRandomColor() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        
+        // 게임 완료 처리
+        function gameComplete() {
+            isGameActive = false;
+            
+            Swal.fire({
+                title: '게임 완료!',
+                text: '텔레스트레이션 게임이 완료되었습니다!',
+                icon: 'success',
+                confirmButtonText: '확인',
+                confirmButtonColor: '#4ecdc4'
+            }).then(() => {
+                // 게임 완료 후 처리 (예: 메인 화면으로 이동)
+                console.log('게임 완료');
+            });
+        }
+        
+        // 디버깅용 테스트 함수 (개발자 콘솔에서 호출 가능)
+        window.testSuccessEffect = function() {
+            showSuccessEffect("사과", "사과");
+        };
+        
+        window.testFailureEffect = function() {
+            showFailureEffect("사과", "바나나");
+        };
         function showWaitingScreen() {
             disableDrawing();
             

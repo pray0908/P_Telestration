@@ -1,0 +1,34 @@
+USE [TelestrationGame]
+GO
+
+/****** Object:  Table [dbo].[game_rounds]    Script Date: 2025-07-17 오전 10:01:04 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[game_rounds](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[round_number] [int] NOT NULL,
+	[player_number] [int] NOT NULL,
+	[drawing_data] [nvarchar](max) NULL,
+	[created_at] [datetime] NULL,
+ CONSTRAINT [PK_game_rounds] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+
+GO
+
+ALTER TABLE [dbo].[game_rounds] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'라운드 번호' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'game_rounds', @level2type=N'COLUMN',@level2name=N'round_number'
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'그림 데이터 (base64)' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'game_rounds', @level2type=N'COLUMN',@level2name=N'drawing_data'
+GO
+
+
