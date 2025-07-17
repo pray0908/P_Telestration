@@ -514,6 +514,7 @@
         
         // 그림 저장
         function saveDrawing() {
+            console.log(`플레이어 ${playerNumber}: 그림 저장 시작`);
             const drawingData = canvas.toDataURL('image/png');
             
             fetch('save_drawing.php', {
@@ -530,7 +531,8 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('그림이 저장되었습니다. 다음 턴:', data.next_turn);
+                    console.log('그림 저장 성공:', data);
+                    console.log(`현재 턴이 ${data.next_turn}으로 변경됨`);
                     
                     // 게임 완료 후 대기 상태로 전환
                     isGameActive = false;
@@ -539,10 +541,9 @@
                     setTimeout(() => {
                         showWaitingScreen();
                         
-                        // 폴링 재시작 (1번이 아닌 경우)
-                        if (playerNumber !== 1) {
-                            startTurnPolling();
-                        }
+                        // 모든 플레이어가 폴링 시작 (자신의 턴이 다시 올 수 있으므로)
+                        console.log(`플레이어 ${playerNumber}: 폴링 재시작`);
+                        startTurnPolling();
                     }, 3000);
                 } else {
                     console.error('그림 저장 실패:', data.error);
@@ -617,11 +618,15 @@
         // 페이지 로드 및 리사이즈 시 캔버스 크기 조정
         window.addEventListener('load', function() {
             resizeCanvas();
+            console.log(`플레이어 ${playerNumber}: 페이지 로드 완료`);
             checkMyTurn();
             
             // 1번이 아니면 주기적으로 턴 체크 시작
             if (playerNumber !== 1) {
+                console.log(`플레이어 ${playerNumber}: 폴링 시작 (초기)`);
                 startTurnPolling();
+            } else {
+                console.log(`플레이어 ${playerNumber}: 방장이므로 폴링 안함 (게임 시작 대기)`);
             }
         });
         window.addEventListener('resize', resizeCanvas);
@@ -633,8 +638,14 @@
         
         // 주기적으로 턴 상태 체크 (1번 제외)
         function startTurnPolling() {
+            if (turnCheckInterval) {
+                clearInterval(turnCheckInterval);
+            }
+            
+            console.log(`플레이어 ${playerNumber}: 폴링 시작`);
             turnCheckInterval = setInterval(() => {
                 if (!isGameActive) { // 게임 중이 아닐 때만 체크
+                    console.log(`플레이어 ${playerNumber}: 턴 체크 중...`);
                     checkMyTurn();
                 }
             }, 2000); // 2초마다 체크
@@ -650,12 +661,17 @@
         
         // 내 턴인지 확인
         function checkMyTurn() {
+            console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
+            
             fetch('check_turn.php?player_number=' + playerNumber)
             .then(response => response.json())
             .then(data => {
+                console.log(`플레이어 ${playerNumber}: 턴 확인 결과:`, data);
+                
                 if (data.success) {
                     if (!data.game_started) {
                         // 게임이 시작되지 않았음
+                        console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
                         if (playerNumber === 1) {
                             // 1번 플레이어는 게임 시작 버튼 대기
                             console.log('게임 시작 대기 중...');
@@ -666,27 +682,46 @@
                         return;
                     }
                     
+                    // 게임 완료 체크
+                    if (data.game_completed) {
+                        console.log('게임 완료 감지!');
+                        stopTurnPolling();
+                        isGameActive = false;
+                        
+                        // 모든 플레이어에게 결과 표시
+                        if (data.is_correct) {
+                            showSuccessEffect(data.correct_answer, data.final_answer);
+                        } else {
+                            showFailureEffect(data.correct_answer, data.final_answer);
+                        }
+                        return;
+                    }
+                    
                     // 게임이 시작된 상태
                     isLastPlayer = data.is_last_player;
                     maxPlayerNumber = data.max_player_number;
                     
-                    console.log(`플레이어 ${playerNumber}번 - 마지막 순번: ${isLastPlayer} (총 ${maxPlayerNumber}명)`);
+                    console.log(`플레이어 ${playerNumber}번 - 현재 턴: ${data.current_turn}, 내 턴: ${data.is_my_turn}, 마지막 순번: ${isLastPlayer} (총 ${maxPlayerNumber}명)`);
                     
                     if (data.is_my_turn) {
                         // 내 턴이면
+                        console.log(`플레이어 ${playerNumber}: 내 턴 시작!`);
                         isGameActive = true;
                         stopTurnPolling(); // 폴링 중단
                         
                         if (isLastPlayer) {
                             // 마지막 플레이어는 제시어 입력
+                            console.log('마지막 플레이어 - 제시어 입력 모드');
                             showAnswerInput();
                         } else if (playerNumber > 1) {
                             // 2번 이상이면 이전 그림 보여주기
+                            console.log('중간 플레이어 - 그림 그리기 모드');
                             showPreviousDrawingAndStart();
                         }
                         // 1번은 방장이 시작 버튼을 눌러야 시작
                     } else {
                         // 내 턴이 아니면 대기 화면 (게임 시작된 후에만)
+                        console.log(`플레이어 ${playerNumber}: 다른 플레이어 턴 (현재: ${data.current_turn})`);
                         if (!isGameActive) { // 아직 게임이 활성화되지 않았을 때만
                             showWaitingScreen();
                         }
@@ -865,23 +900,31 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: linear-gradient(45deg, #00c851, #007e33);
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 z-index: 99999;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 color: white;
-                font-family: 'Fredoka One', cursive;
-                animation: celebrationSlideIn 0.5s ease-out;
+                font-family: 'Noto Sans KR', sans-serif;
+                animation: fadeIn 0.5s ease-out;
+                backdrop-filter: blur(20px);
             `;
             
             overlay.innerHTML = `
                 <div id="fireworksContainer" style="position: absolute; width: 100%; height: 100%; pointer-events: none;"></div>
-                <div style="font-size: 4rem; margin-bottom: 20px; animation: bounceIn 1s ease-out;">🎉 정답! 🎉</div>
-                <div style="font-size: 1.5rem; margin-bottom: 10px; animation: fadeInUp 1s ease-out 0.3s both;">축하합니다!</div>
-                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.6s both;">정답: "${correctAnswer}"</div>
-                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.9s both;">답안: "${userAnswer}"</div>
+                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 60px; border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="font-size: 3.5rem; margin-bottom: 20px; font-weight: 300; letter-spacing: 2px; animation: slideInDown 0.8s ease-out;">🎉</div>
+                    <div style="font-size: 2.5rem; margin-bottom: 15px; font-weight: 700; animation: slideInUp 0.8s ease-out 0.2s both; color: #fff;">SUCCESS!</div>
+                    <div style="font-size: 1.3rem; margin-bottom: 30px; font-weight: 400; opacity: 0.9; animation: slideInUp 0.8s ease-out 0.4s both;">완벽한 정답입니다!</div>
+                    <div style="font-size: 1.1rem; margin-bottom: 10px; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.6s both;">
+                        <strong>정답:</strong> ${correctAnswer}
+                    </div>
+                    <div style="font-size: 1.1rem; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.8s both;">
+                        <strong>답안:</strong> ${userAnswer}
+                    </div>
+                </div>
             `;
             
             document.body.appendChild(overlay);
@@ -890,14 +933,18 @@
             // 불꽃놀이 이펙트
             createFireworks();
             
-            // 3초 후 제거
+            // 4초 후 제거
             setTimeout(() => {
                 if (overlay && overlay.parentNode) {
-                    overlay.remove();
-                    console.log('성공 오버레이 제거됨');
+                    overlay.style.animation = 'fadeOut 0.5s ease-out';
+                    setTimeout(() => {
+                        overlay.remove();
+                        console.log('성공 오버레이 제거됨');
+                        enableDrawing(); // 그리기 다시 활성화
+                    }, 500);
                 }
                 gameComplete();
-            }, 3000);
+            }, 4000);
         }
         
         // 오답 실패 이펙트
@@ -912,35 +959,47 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: linear-gradient(45deg, #ff4757, #c44569);
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
                 z-index: 99999;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 color: white;
-                font-family: 'Fredoka One', cursive;
-                animation: failureSlideIn 0.5s ease-out;
+                font-family: 'Noto Sans KR', sans-serif;
+                animation: fadeIn 0.5s ease-out;
+                backdrop-filter: blur(20px);
             `;
             
             overlay.innerHTML = `
-                <div style="font-size: 4rem; margin-bottom: 20px; animation: bounceIn 1s ease-out;">😅 아쉬워요!</div>
-                <div style="font-size: 1.5rem; margin-bottom: 10px; animation: fadeInUp 1s ease-out 0.3s both;">하지만 잘 했어요!</div>
-                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.6s both;">정답: "${correctAnswer}"</div>
-                <div style="font-size: 1.2rem; opacity: 0.9; animation: fadeInUp 1s ease-out 0.9s both;">답안: "${userAnswer}"</div>
+                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 60px; border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+                    <div style="font-size: 3.5rem; margin-bottom: 20px; font-weight: 300; letter-spacing: 2px; animation: slideInDown 0.8s ease-out;">💝</div>
+                    <div style="font-size: 2.5rem; margin-bottom: 15px; font-weight: 700; animation: slideInUp 0.8s ease-out 0.2s both; color: #fff;">GOOD TRY!</div>
+                    <div style="font-size: 1.3rem; margin-bottom: 30px; font-weight: 400; opacity: 0.9; animation: slideInUp 0.8s ease-out 0.4s both;">정말 잘했어요! 다음에 또 도전해보세요.</div>
+                    <div style="font-size: 1.1rem; margin-bottom: 10px; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.6s both;">
+                        <strong>정답:</strong> ${correctAnswer}
+                    </div>
+                    <div style="font-size: 1.1rem; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.8s both;">
+                        <strong>답안:</strong> ${userAnswer}
+                    </div>
+                </div>
             `;
             
             document.body.appendChild(overlay);
             console.log('실패 오버레이 생성됨:', overlay);
             
-            // 3초 후 제거
+            // 4초 후 제거
             setTimeout(() => {
                 if (overlay && overlay.parentNode) {
-                    overlay.remove();
-                    console.log('실패 오버레이 제거됨');
+                    overlay.style.animation = 'fadeOut 0.5s ease-out';
+                    setTimeout(() => {
+                        overlay.remove();
+                        console.log('실패 오버레이 제거됨');
+                        enableDrawing(); // 그리기 다시 활성화
+                    }, 500);
                 }
                 gameComplete();
-            }, 3000);
+            }, 4000);
         }
         
         // 불꽃놀이 생성
@@ -954,29 +1013,76 @@
             console.log('불꽃놀이 시작');
             
             // 여러 개의 불꽃 생성
-            for (let i = 0; i < 15; i++) {
+            for (let i = 0; i < 20; i++) {
                 setTimeout(() => {
                     const firework = document.createElement('div');
+                    const color = getRandomColor();
                     firework.style.cssText = `
                         position: absolute;
-                        width: 20px;
-                        height: 20px;
-                        background: radial-gradient(circle, ${getRandomColor()}, transparent);
+                        width: 6px;
+                        height: 6px;
+                        background: ${color};
                         border-radius: 50%;
                         left: ${Math.random() * 100}%;
                         top: ${Math.random() * 100}%;
-                        animation: fireworkExplode 2s ease-out infinite;
+                        box-shadow: 0 0 10px ${color}, 0 0 20px ${color}, 0 0 30px ${color};
+                        animation: sparkle 1.5s ease-out infinite;
                     `;
                     
                     container.appendChild(firework);
+                    
+                    // 파티클 생성
+                    createParticles(container, firework.style.left, firework.style.top, color);
                     
                     // 애니메이션 완료 후 제거
                     setTimeout(() => {
                         if (firework && firework.parentNode) {
                             firework.remove();
                         }
-                    }, 2000);
-                }, i * 200);
+                    }, 1500);
+                }, i * 100);
+            }
+        }
+        
+        // 파티클 생성
+        function createParticles(container, x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    const angle = (i * 45) * (Math.PI / 180);
+                    const distance = 50 + Math.random() * 30;
+                    const endX = parseFloat(x) + Math.cos(angle) * distance;
+                    const endY = parseFloat(y) + Math.sin(angle) * distance;
+                    
+                    particle.style.cssText = `
+                        position: absolute;
+                        width: 3px;
+                        height: 3px;
+                        background: ${color};
+                        border-radius: 50%;
+                        left: ${x};
+                        top: ${y};
+                        transition: all 0.8s ease-out;
+                        opacity: 1;
+                    `;
+                    
+                    container.appendChild(particle);
+                    
+                    // 애니메이션 시작
+                    setTimeout(() => {
+                        particle.style.left = endX + '%';
+                        particle.style.top = endY + '%';
+                        particle.style.opacity = '0';
+                        particle.style.transform = 'scale(0)';
+                    }, 10);
+                    
+                    // 파티클 제거
+                    setTimeout(() => {
+                        if (particle && particle.parentNode) {
+                            particle.remove();
+                        }
+                    }, 1000);
+                }, i * 50);
             }
         }
         
@@ -990,16 +1096,26 @@
         function gameComplete() {
             isGameActive = false;
             
-            Swal.fire({
-                title: '게임 완료!',
-                text: '텔레스트레이션 게임이 완료되었습니다!',
-                icon: 'success',
-                confirmButtonText: '확인',
-                confirmButtonColor: '#4ecdc4'
-            }).then(() => {
-                // 게임 완료 후 처리 (예: 메인 화면으로 이동)
-                console.log('게임 완료');
-            });
+            // 모든 대기 화면 닫기
+            Swal.close();
+            
+            // 그리기 다시 활성화
+            enableDrawing();
+            
+            setTimeout(() => {
+                Swal.fire({
+                    title: '🎨 게임 완료!',
+                    text: '텔레스트레이션 게임이 완료되었습니다!\n모든 플레이어가 수고하셨습니다!',
+                    icon: 'success',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#4ecdc4',
+                    backdrop: 'rgba(0,0,0,0.8)',
+                    allowOutsideClick: false
+                }).then(() => {
+                    // 게임 완료 후 처리 (예: 메인 화면으로 이동)
+                    console.log('게임 완료 - 모든 처리 완료');
+                });
+            }, 1000);
         }
         
         // 디버깅용 테스트 함수 (개발자 콘솔에서 호출 가능)
