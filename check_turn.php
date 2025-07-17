@@ -29,7 +29,7 @@ try {
     }
     
     // 게임 완료 상태 확인
-    $stmt = $conn->prepare("SELECT game_status, final_answer, is_correct, topics, current_turn FROM current_game ORDER BY id DESC");
+    $stmt = $conn->prepare("SELECT id, game_status, final_answer, is_correct, topics, current_turn FROM current_game ORDER BY id DESC");
     $stmt->execute();
     $gameInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -39,21 +39,28 @@ try {
             'success' => true, 
             'game_started' => true,
             'game_completed' => true,
+            'game_id' => $gameInfo['id'],
             'is_correct' => $gameInfo['is_correct'] == 1,
             'correct_answer' => $gameInfo['topics'],
             'final_answer' => $gameInfo['final_answer'],
-            'debug' => "Game completed"
+            'debug' => "Game completed, ID: {$gameInfo['id']}"
         ]);
         exit;
     }
     
     // 현재 턴 확인
     $currentTurn = $gameInfo['current_turn'] ?? 1;
+    $currentGameId = $gameInfo['id'] ?? null;
     
     // 최대 플레이어 번호 확인 (마지막 순번)
     $stmt = $conn->prepare("SELECT MAX(player_number) FROM players WHERE logined = 1");
     $stmt->execute();
     $maxPlayerNumber = $stmt->fetchColumn();
+    
+    // 모든 참여 플레이어 목록 확인 (디버깅용)
+    $stmt = $conn->prepare("SELECT player_number, name FROM players WHERE logined = 1 ORDER BY player_number");
+    $stmt->execute();
+    $allPlayers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $isMyTurn = ($currentTurn == $playerNumber);
     $isLastPlayer = ($playerNumber == $maxPlayerNumber);
@@ -62,11 +69,13 @@ try {
         'success' => true, 
         'game_started' => true,
         'game_completed' => false,
+        'game_id' => $currentGameId,
         'is_my_turn' => $isMyTurn,
         'is_last_player' => $isLastPlayer,
         'current_turn' => $currentTurn,
         'max_player_number' => $maxPlayerNumber,
-        'debug' => "Player {$playerNumber} check: current_turn={$currentTurn}, is_my_turn=" . ($isMyTurn ? 'true' : 'false') . ", max_player={$maxPlayerNumber}"
+        'all_players' => $allPlayers,
+        'debug' => "Player {$playerNumber} check: current_turn={$currentTurn}, is_my_turn=" . ($isMyTurn ? 'true' : 'false') . ", max_player={$maxPlayerNumber}, is_last=" . ($isLastPlayer ? 'true' : 'false') . ", game_id={$currentGameId}"
     ]);
     
 } catch (Exception $e) {

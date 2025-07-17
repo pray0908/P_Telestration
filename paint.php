@@ -398,6 +398,8 @@
         let isGameActive = false;
         let isLastPlayer = false;
         let maxPlayerNumber = 0;
+        let gameCompletedProcessed = false; // 게임 완료 처리 플래그
+        let lastGameId = null; // 마지막 게임 ID 추적
         
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
@@ -685,6 +687,16 @@
                     // 게임 완료 체크
                     if (data.game_completed) {
                         console.log('게임 완료 감지!');
+                        
+                        // 이미 게임 완료를 처리했다면 무시
+                        if (gameCompletedProcessed) {
+                            console.log('게임 완료 이미 처리됨 - 무시');
+                            return;
+                        }
+                        
+                        // 게임 완료 플래그 설정 및 게임 ID 저장
+                        gameCompletedProcessed = true;
+                        lastGameId = data.game_id;
                         stopTurnPolling();
                         isGameActive = false;
                         
@@ -697,11 +709,27 @@
                         return;
                     }
                     
-                    // 게임이 시작된 상태
+                    // 새 게임 시작 감지 (게임 ID가 변경됨)
+                    if (gameCompletedProcessed && data.game_id && data.game_id !== lastGameId) {
+                        console.log(`플레이어 ${playerNumber}: 새 게임 감지! (이전 ID: ${lastGameId}, 새 ID: ${data.game_id})`);
+                        gameCompletedProcessed = false;
+                        lastGameId = data.game_id;
+                        isGameActive = false;
+                    }
+                    
+                    // 게임이 시작된 상태 (진행 중)
+                    // 게임이 진행 중이면 완료 플래그 초기화
+                    if (gameCompletedProcessed) {
+                        console.log(`플레이어 ${playerNumber}: 새 게임 진행 중 - 플래그 초기화`);
+                        gameCompletedProcessed = false;
+                    }
+                    
                     isLastPlayer = data.is_last_player;
                     maxPlayerNumber = data.max_player_number;
                     
                     console.log(`플레이어 ${playerNumber}번 - 현재 턴: ${data.current_turn}, 내 턴: ${data.is_my_turn}, 마지막 순번: ${isLastPlayer} (총 ${maxPlayerNumber}명)`);
+                    console.log('참여자 목록:', data.all_players);
+                    console.log('서버 디버그:', data.debug);
                     
                     if (data.is_my_turn) {
                         // 내 턴이면
@@ -709,20 +737,30 @@
                         isGameActive = true;
                         stopTurnPolling(); // 폴링 중단
                         
+                        // 대기 화면이 켜져있다면 닫기
+                        if (Swal.isVisible()) {
+                            Swal.close();
+                        }
+                        
                         if (isLastPlayer) {
                             // 마지막 플레이어는 제시어 입력
-                            console.log('마지막 플레이어 - 제시어 입력 모드');
+                            console.log(`플레이어 ${playerNumber}: 마지막 플레이어 - 제시어 입력 모드`);
                             showAnswerInput();
                         } else if (playerNumber > 1) {
                             // 2번 이상이면 이전 그림 보여주기
-                            console.log('중간 플레이어 - 그림 그리기 모드');
+                            console.log(`플레이어 ${playerNumber}: 중간 플레이어 - 그림 그리기 모드`);
                             showPreviousDrawingAndStart();
+                        } else {
+                            // 1번 플레이어 (방장이 시작 버튼을 눌러야 시작)
+                            console.log(`플레이어 ${playerNumber}: 방장 - 시작 버튼 대기`);
                         }
-                        // 1번은 방장이 시작 버튼을 눌러야 시작
                     } else {
-                        // 내 턴이 아니면 대기 화면 (게임 시작된 후에만)
+                        // 내 턴이 아니면서 게임이 진행 중
                         console.log(`플레이어 ${playerNumber}: 다른 플레이어 턴 (현재: ${data.current_turn})`);
-                        if (!isGameActive) { // 아직 게임이 활성화되지 않았을 때만
+                        
+                        // 게임이 시작되었지만 내 턴이 아닐 때 대기 화면 표시
+                        if (!isGameActive && !Swal.isVisible()) {
+                            console.log(`플레이어 ${playerNumber}: 대기 화면 표시`);
                             showWaitingScreen();
                         }
                     }
@@ -1112,8 +1150,25 @@
                     backdrop: 'rgba(0,0,0,0.8)',
                     allowOutsideClick: false
                 }).then(() => {
-                    // 게임 완료 후 처리 (예: 메인 화면으로 이동)
-                    console.log('게임 완료 - 모든 처리 완료');
+                    // 게임 완료 후 처리
+                    console.log(`플레이어 ${playerNumber}: 게임 완료 - 상태 초기화`);
+                    
+                    // 상태 초기화
+                    isGameActive = false;
+                    isLastPlayer = false;
+                    maxPlayerNumber = 0;
+                    currentRound = 1;
+                    // gameCompletedProcessed와 lastGameId는 새 게임 감지까지 유지
+                    
+                    // 1번이 아닌 경우에만 새 게임 감지를 위한 폴링 시작
+                    if (playerNumber !== 1) {
+                        console.log(`플레이어 ${playerNumber}: 새 게임 감지를 위한 폴링 시작`);
+                        startTurnPolling();
+                    } else {
+                        console.log(`플레이어 ${playerNumber}: 방장이므로 새 게임 시작 대기`);
+                    }
+                    
+                    console.log(`플레이어 ${playerNumber}: 다음 게임 시작 대기`);
                 });
             }, 1000);
         }
@@ -1166,9 +1221,12 @@
         }
         
         function startGame() {
-            // 게임 시작 시 폴링 중단 (1번은 이제 게임 진행)
+            // 게임 시작 시 상태 초기화
+            gameCompletedProcessed = false;
             isGameActive = true;
             stopTurnPolling();
+            
+            console.log(`플레이어 ${playerNumber}: 새 게임 시작 - 상태 초기화`);
             
             fetch('start_game.php', {
                 method: 'POST',
@@ -1179,6 +1237,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    console.log('게임 시작 성공:', data);
+                    
+                    // 새 게임 시작으로 상태 초기화
+                    gameCompletedProcessed = false;
+                    lastGameId = null; // 새 게임이므로 ID 초기화
+                    
                     // 1번 플레이어에게만 단어 보여주기
                     if (playerNumber === 1) {
                         Swal.fire({
