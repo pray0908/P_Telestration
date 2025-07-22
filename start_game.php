@@ -30,12 +30,12 @@ try {
     $stmt = $conn->prepare("DELETE FROM players WHERE logined > 1");
     $stmt->execute();
     
-    // 5. 현재 게임 참여자들을 모두 logined=1로 설정 (게임 진행 상태)
-    $stmt = $conn->prepare("UPDATE players SET logined = 1 WHERE logined IN (0, 1)");
+    // 5. 현재 게임 참여자들을 모두 logined=1로 설정하고 game_id 업데이트
+    $stmt = $conn->prepare("UPDATE players SET logined = 1, game_id = NULL WHERE logined IN (0, 1) AND (game_id IS NULL OR game_id = 0)");
     $stmt->execute();
     
     // 현재 게임 참여자 수 확인
-    $stmt = $conn->prepare("SELECT COUNT(*), MAX(player_number) FROM players WHERE logined = 1");
+    $stmt = $conn->prepare("SELECT COUNT(*), MAX(player_number) FROM players WHERE logined = 1 AND (game_id IS NULL OR game_id = 0)");
     $stmt->execute();
     $result = $stmt->fetch(PDO::FETCH_NUM);
     $playerCount = $result[0];
@@ -62,6 +62,10 @@ try {
     if (!$newGameId) {
         throw new Exception('게임 ID 생성에 실패했습니다.');
     }
+    
+    // 🔧 중요: 참여자들의 game_id를 새 게임 ID로 업데이트
+    $stmt = $conn->prepare("UPDATE players SET game_id = ? WHERE logined = 1 AND (game_id IS NULL OR game_id = 0)");
+    $stmt->execute([$newGameId]);
     
     echo json_encode([
         'success' => true, 

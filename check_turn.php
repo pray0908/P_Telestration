@@ -57,14 +57,14 @@ try {
         exit;
     }
     
-    // 최대 플레이어 번호 확인 (마지막 순번)
-    $stmt = $conn->prepare("SELECT MAX(player_number) FROM players WHERE logined = 1");
-    $stmt->execute();
+    // 최대 플레이어 번호 확인 (마지막 순번) - 현재 게임만
+    $stmt = $conn->prepare("SELECT MAX(player_number) FROM players WHERE logined = 1 AND game_id = ?");
+    $stmt->execute([$currentGameId]);
     $maxPlayerNumber = $stmt->fetchColumn();
     
-    // 모든 참여 플레이어 목록 확인 (디버깅용)
-    $stmt = $conn->prepare("SELECT player_number, name FROM players WHERE logined = 1 ORDER BY player_number");
-    $stmt->execute();
+    // 모든 참여 플레이어 목록 확인 (디버깅용) - 현재 게임만
+    $stmt = $conn->prepare("SELECT player_number, name FROM players WHERE logined = 1 AND game_id = ? ORDER BY player_number");
+    $stmt->execute([$currentGameId]);
     $allPlayers = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     $isMyTurn = ($currentTurn == $playerNumber);
