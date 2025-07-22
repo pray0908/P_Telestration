@@ -403,6 +403,10 @@
         let gameCompleteExecuted = false; // gameComplete 실행 방지 플래그
         let isAnswerSubmitter = false; // 정답 제출자 여부 (중복 방지용)
         
+        // *** 얼럿 중복 출력 방지 변수 추가 ***
+        let gameResultShown = false; // 게임 결과 얼럿(정답/오답) 출력 여부
+        let gameCompleteShown = false; // 게임 완료 얼럿 출력 여부
+        
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
         const playerNumber = parseInt(urlParams.get('player_number')) || 0;
@@ -664,135 +668,113 @@
         }
         
         // 내 턴인지 확인
-        function checkMyTurn() {
-            console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
+function checkMyTurn() {
+    console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
+    
+    fetch('check_turn.php?player_number=' + playerNumber)
+    .then(response => response.json())
+    .then(data => {
+        console.log(`플레이어 ${playerNumber}: 턴 확인 결과:`, data);
+        
+        if (data.success) {
+            if (!data.game_started) {
+                // 게임이 시작되지 않았음
+                console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
+                return;
+            }
             
-            fetch('check_turn.php?player_number=' + playerNumber)
-            .then(response => response.json())
-            .then(data => {
-                console.log(`플레이어 ${playerNumber}: 턴 확인 결과:`, data);
+            // 게임 완료 체크
+            if (data.game_completed) {
+                console.log('게임 완료 감지!');
+                console.log(`현재 lastGameId: ${lastGameId}, 새 game_id: ${data.game_id}`);
                 
-                if (data.success) {
-                    if (!data.game_started) {
-                        // 게임이 시작되지 않았음
-                        console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
-                        if (playerNumber === 1) {
-                            // 1번 플레이어는 게임 시작 버튼 대기
-                            console.log('게임 시작 대기 중...');
-                        } else {
-                            // 2번 이상은 게임 시작 대기 (조용히)
-                            console.log('게임 시작을 기다리는 중...');
-                        }
-                        return;
-                    }
-                    
-                    // 게임 완료 체크
-                    if (data.game_completed) {
-                        console.log('게임 완료 감지!');
-                        console.log(`현재 lastGameId: ${lastGameId} (타입: ${typeof lastGameId})`);
-                        console.log(`새 game_id: ${data.game_id} (타입: ${typeof data.game_id})`);
-                        
-                        // 타입 통일 (문자열로 변환하여 비교)
-                        const currentGameId = String(data.game_id);
-                        const savedGameId = String(lastGameId || '');
-                        
-                        console.log(`비교: ${savedGameId} === ${currentGameId} → ${savedGameId === currentGameId}`);
-                        
-                        // 이미 처리한 게임 ID면 무시
-                        if (lastGameId && savedGameId === currentGameId) {
-                            console.log(`게임 완료 이미 처리됨 - 무시 (game_id: ${currentGameId})`);
-                            return;
-                        }
-                        
-                        // 이미 게임 완료를 처리했다면 무시 (추가 보호)
-                        if (gameCompletedProcessed) {
-                            console.log('게임 완료 이미 처리됨 - 무시 (플래그)');
-                            return;
-                        }
-                        
-                        // 게임 완료 플래그 설정 및 게임 ID 저장
-                        gameCompletedProcessed = true;
-                        lastGameId = currentGameId; // 문자열로 저장
-                        stopTurnPolling();
-                        isGameActive = false;
-                        
-                        console.log(`게임 완료 처리 시작 (game_id: ${currentGameId})`);
-                        console.log(`lastGameId 설정됨: ${lastGameId}`);
-                        
-                        // 모든 플레이어에게 결과 표시
-                        if (data.is_correct) {
-                            showSuccessEffect(data.correct_answer, data.final_answer);
-                        } else {
-                            showFailureEffect(data.correct_answer, data.final_answer);
-                        }
-                        return;
-                    }
-                    
-                    // 새 게임 시작 감지 (게임 ID가 변경됨)
-                    if (gameCompletedProcessed && data.game_id && data.game_id !== lastGameId) {
-                        console.log(`플레이어 ${playerNumber}: 새 게임 감지! (이전 ID: ${lastGameId}, 새 ID: ${data.game_id})`);
-                        gameCompletedProcessed = false;
-                        gameCompleteExecuted = false; // 새 게임이므로 초기화
-                        lastGameId = data.game_id;
-                        isGameActive = false;
-                    }
-                    
-                    // 게임이 시작된 상태 (진행 중)
-                    // 게임이 진행 중이면 완료 플래그 초기화
-                    if (gameCompletedProcessed) {
-                        console.log(`플레이어 ${playerNumber}: 새 게임 진행 중 - 플래그 초기화`);
-                        gameCompletedProcessed = false;
-                        gameCompleteExecuted = false;
-                    }
-                    
-                    isLastPlayer = data.is_last_player;
-                    maxPlayerNumber = data.max_player_number;
-                    
-                    console.log(`플레이어 ${playerNumber}번 - 현재 턴: ${data.current_turn}, 내 턴: ${data.is_my_turn}, 마지막 순번: ${isLastPlayer} (총 ${maxPlayerNumber}명)`);
-                    console.log('참여자 목록:', data.all_players);
-                    console.log('서버 디버그:', data.debug);
-                    
-                    if (data.is_my_turn) {
-                        // 내 턴이면
-                        console.log(`플레이어 ${playerNumber}: 내 턴 시작!`);
-                        isGameActive = true;
-                        stopTurnPolling(); // 폴링 중단
-                        
-                        // 대기 화면이 켜져있다면 닫기
-                        if (Swal.isVisible()) {
-                            Swal.close();
-                        }
-                        
-                        if (isLastPlayer) {
-                            // 마지막 플레이어는 제시어 입력
-                            console.log(`플레이어 ${playerNumber}: 마지막 플레이어 - 제시어 입력 모드`);
-                            showAnswerInput();
-                        } else if (playerNumber > 1) {
-                            // 2번 이상이면 이전 그림 보여주기
-                            console.log(`플레이어 ${playerNumber}: 중간 플레이어 - 그림 그리기 모드`);
-                            showPreviousDrawingAndStart();
-                        } else {
-                            // 1번 플레이어 (방장이 시작 버튼을 눌러야 시작)
-                            console.log(`플레이어 ${playerNumber}: 방장 - 시작 버튼 대기`);
-                        }
+                // 타입 통일 (문자열로 변환하여 비교)
+                const currentGameId = String(data.game_id);
+                const savedGameId = String(lastGameId || '');
+                
+                // 🔧 수정된 부분: 같은 게임이지만 아직 처리하지 않은 경우 허용
+                // 이전 로직: 같은 게임 ID면 무조건 차단
+                // 새 로직: 같은 게임 ID여도 gameCompletedProcessed가 false면 처리
+                if (lastGameId && savedGameId === currentGameId && gameCompletedProcessed) {
+                    console.log(`게임 완료 이미 처리됨 - 무시 (game_id: ${currentGameId})`);
+                    return;
+                }
+                
+                // 🔧 수정된 부분: gameCompletedProcessed 체크 제거
+                // 이유: 마지막 플레이어가 checkAnswer()에서 먼저 처리하더라도
+                // 다른 플레이어들도 동일한 게임 완료를 처리할 수 있도록 함
+                
+                // 게임 완료 플래그 설정 및 게임 ID 저장
+                gameCompletedProcessed = true;
+                lastGameId = currentGameId;
+                stopTurnPolling();
+                isGameActive = false;
+                
+                console.log(`게임 완료 처리 시작 (game_id: ${currentGameId})`);
+                
+                // 정답 제출자가 아닌 경우에만 이펙트 표시
+                // (정답 제출자는 checkAnswer()에서 이미 표시했음)
+                if (!isAnswerSubmitter) {
+                    if (data.is_correct) {
+                        showSuccessEffect(data.correct_answer, data.final_answer);
                     } else {
-                        // 내 턴이 아니면서 게임이 진행 중
-                        console.log(`플레이어 ${playerNumber}: 다른 플레이어 턴 (현재: ${data.current_turn})`);
-                        
-                        // 게임이 시작되었지만 내 턴이 아닐 때 대기 화면 표시
-                        if (!isGameActive && !Swal.isVisible()) {
-                            console.log(`플레이어 ${playerNumber}: 대기 화면 표시`);
-                            showWaitingScreen();
-                        }
+                        showFailureEffect(data.correct_answer, data.final_answer);
                     }
                 } else {
-                    console.error('턴 확인 오류:', data.error);
+                    // 정답 제출자인 경우 바로 gameComplete 호출
+                    // (이미 성공/실패 이펙트는 checkAnswer()에서 표시했음)
+                    setTimeout(() => {
+                        gameComplete();
+                    }, 4000); // 이펙트 시간과 동일하게 맞춤
                 }
-            })
-            .catch(error => {
-                console.error('턴 확인 실패:', error);
-            });
+                return;
+            }
+            
+            // 🔧 추가된 부분: 새 게임 시작 감지 로직 개선
+            // 현재 게임이 진행 중이고 이전에 완료된 게임과 다른 ID인 경우
+            if (gameCompletedProcessed && data.game_id && String(data.game_id) !== String(lastGameId)) {
+                console.log(`플레이어 ${playerNumber}: 새 게임 감지! (이전 ID: ${lastGameId}, 새 ID: ${data.game_id})`);
+                // 새 게임 상태로 초기화
+                gameCompletedProcessed = false;
+                gameCompleteExecuted = false;
+                isAnswerSubmitter = false; // 정답 제출자 플래그도 초기화
+                lastGameId = data.game_id; // 새 게임 ID로 업데이트
+                isGameActive = false;
+            }
+            
+            // 기존 로직 계속...
+            isLastPlayer = data.is_last_player;
+            maxPlayerNumber = data.max_player_number;
+            
+            console.log(`플레이어 ${playerNumber}번 - 현재 턴: ${data.current_turn}, 내 턴: ${data.is_my_turn}`);
+            
+            if (data.is_my_turn) {
+                // 내 턴 처리 로직...
+                console.log(`플레이어 ${playerNumber}: 내 턴 시작!`);
+                isGameActive = true;
+                stopTurnPolling();
+                
+                if (Swal.isVisible()) {
+                    Swal.close();
+                }
+                
+                if (isLastPlayer) {
+                    showAnswerInput();
+                } else if (playerNumber > 1) {
+                    showPreviousDrawingAndStart();
+                }
+            } else {
+                // 대기 상태 처리...
+                if (!isGameActive && !Swal.isVisible()) {
+                    showWaitingScreen();
+                }
+            }
         }
+    })
+    .catch(error => {
+        console.error('턴 확인 실패:', error);
+    });
+}
         
         // 이전 그림 보여주고 게임 시작
         function showPreviousDrawingAndStart() {
@@ -910,52 +892,60 @@
         }
         
         // 제시어 정답 체크
-        function checkAnswer(userAnswer) {
-            // 정답 제출자 플래그 설정 (중복 방지용)
-            isAnswerSubmitter = true;
+function checkAnswer(userAnswer) {
+    // 정답 제출자 플래그 설정
+    isAnswerSubmitter = true;
+    
+    fetch('check_answer.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            answer: userAnswer,
+            player_number: playerNumber
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            console.log(`플레이어 ${playerNumber}: 정답 제출자로서 직접 이펙트 표시`);
             
-            // 서버로 정답 체크 요청
-            fetch('check_answer.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    answer: userAnswer,
-                    player_number: playerNumber
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log(`플레이어 ${playerNumber}: 정답 제출자로서 직접 이펙트 표시`);
-                    
-                    // 정답 제출자는 바로 이펙트 표시
-                    if (data.is_correct) {
-                        showSuccessEffect(data.correct_answer, data.user_answer);
-                    } else {
-                        showFailureEffect(data.correct_answer, data.user_answer);
-                    }
-                } else {
-                    Swal.fire({
-                        title: '오류',
-                        text: data.error,
-                        icon: 'error'
-                    });
-                }
-            })
-            .catch(error => {
-                Swal.fire({
-                    title: '오류',
-                    text: '정답 체크 중 오류가 발생했습니다.',
-                    icon: 'error'
-                });
+            // 🔧 수정된 부분: gameCompletedProcessed 설정 추가
+            // 다른 플레이어들이 중복 처리하지 않도록 하면서도
+            // 동일한 게임 완료 이벤트는 처리할 수 있도록 함
+            gameCompletedProcessed = true;
+            lastGameId = data.current_game_id; // 현재 게임 ID 저장
+            
+            // 정답 제출자는 바로 이펙트 표시
+            if (data.is_correct) {
+                showSuccessEffect(data.correct_answer, data.user_answer);
+            } else {
+                showFailureEffect(data.correct_answer, data.user_answer);
+            }
+        } else {
+            Swal.fire({
+                title: '오류',
+                text: data.error,
+                icon: 'error'
             });
         }
+    })
+    .catch(error => {
+        Swal.fire({
+            title: '오류',
+            text: '정답 체크 중 오류가 발생했습니다.',
+            icon: 'error'
+        });
+    });
+}
         
         // 정답 성공 이펙트
         function showSuccessEffect(correctAnswer, userAnswer) {
             Swal.close();
+            
+            // *** 게임 결과 얼럿 출력 완료 표시 ***
+            gameResultShown = true;
             
             // 성공 오버레이 생성
             const overlay = document.createElement('div');
@@ -1017,6 +1007,9 @@
         // 오답 실패 이펙트
         function showFailureEffect(correctAnswer, userAnswer) {
             Swal.close();
+            
+            // *** 게임 결과 얼럿 출력 완료 표시 ***
+            gameResultShown = true;
             
             // 실패 오버레이 생성
             const overlay = document.createElement('div');
@@ -1161,55 +1154,62 @@
             return colors[Math.floor(Math.random() * colors.length)];
         }
         
-        // 게임 완료 처리
-        function gameComplete() {
-            // 이미 실행되었다면 무시
-            if (gameCompleteExecuted) {
-                console.log(`플레이어 ${playerNumber}: gameComplete 이미 실행됨 - 무시`);
-                return;
-            }
+// 🔧 restartPollingForNextGame() 함수 추가
+function restartPollingForNextGame() {
+    console.log(`플레이어 ${playerNumber}: 다음 게임을 위한 폴링 재시작`);
+    
+    // 정답 제출자 플래그 초기화 (새 게임을 위해)
+    isAnswerSubmitter = false;
+    
+    // 1번 플레이어가 아니면 폴링 시작
+    if (playerNumber !== 1) {
+        startTurnPolling();
+    }
+}
+
+// 🔧 gameComplete() 함수 수정 (기존 유지하되 주석 추가)
+function gameComplete() {
+    // 이미 실행되었다면 무시
+    if (gameCompleteExecuted) {
+        console.log(`플레이어 ${playerNumber}: gameComplete 이미 실행됨 - 무시`);
+        return;
+    }
+    
+    gameCompleteExecuted = true;
+    isGameActive = false;
+    
+    console.log(`플레이어 ${playerNumber}: gameComplete 실행 시작`);
+    
+    // 모든 대기 화면 닫기
+    Swal.close();
+    
+    setTimeout(() => {
+        Swal.fire({
+            title: '🎨 게임 완료!',
+            text: '텔레스트레이션 게임이 완료되었습니다!\n모든 플레이어가 수고하셨습니다!',
+            icon: 'success',
+            confirmButtonText: '확인',
+            confirmButtonColor: '#4ecdc4',
+            backdrop: 'rgba(0,0,0,0.8)',
+            allowOutsideClick: false
+        }).then(() => {
+            console.log(`플레이어 ${playerNumber}: 게임 완료 - 상태 초기화`);
             
-            gameCompleteExecuted = true;
+            // 다음 게임을 위한 부분 초기화
             isGameActive = false;
+            isLastPlayer = false;
+            maxPlayerNumber = 0;
+            currentRound = 1;
+            gameCompleteExecuted = false;
             
-            console.log(`플레이어 ${playerNumber}: gameComplete 실행 시작`);
-            
-            // 모든 대기 화면 닫기
-            Swal.close();
-            
-            // 그리기 다시 활성화
-            enableDrawing();
+            console.log(`플레이어 ${playerNumber}: 다음 게임 시작 대기`);
             
             setTimeout(() => {
-                Swal.fire({
-                    title: '🎨 게임 완료!',
-                    text: '텔레스트레이션 게임이 완료되었습니다!\n모든 플레이어가 수고하셨습니다!',
-                    icon: 'success',
-                    confirmButtonText: '확인',
-                    confirmButtonColor: '#4ecdc4',
-                    backdrop: 'rgba(0,0,0,0.8)',
-                    allowOutsideClick: false
-                }).then(() => {
-                    // 게임 완료 후 처리
-                    console.log(`플레이어 ${playerNumber}: 게임 완료 - 상태 초기화`);
-                    
-                    // 상태 초기화 (gameCompletedProcessed는 유지)
-                    isGameActive = false;
-                    isLastPlayer = false;
-                    maxPlayerNumber = 0;
-                    currentRound = 1;
-                    gameCompleteExecuted = false; // 다음 게임을 위해 초기화
-                    // gameCompletedProcessed와 lastGameId는 새 게임 시작까지 유지
-                    
-                    console.log(`플레이어 ${playerNumber}: 다음 게임 시작 대기`);
-                    
-                    // 폴링 재시작을 지연시켜 중복 감지 방지
-                    setTimeout(() => {
-                        restartPollingForNextGame();
-                    }, 3000); // 3초 지연
-                });
-            }, 1000);
-        }
+                restartPollingForNextGame();
+            }, 3000);
+        });
+    }, 1000);
+}
         
         // 디버깅용 테스트 함수 (개발자 콘솔에서 호출 가능)
         window.testSuccessEffect = function() {
@@ -1219,6 +1219,7 @@
         window.testFailureEffect = function() {
             showFailureEffect("사과", "바나나");
         };
+        
         function showWaitingScreen() {
             disableDrawing();
             
@@ -1259,6 +1260,10 @@
         }
         
         function startGame() {
+            // *** 게임 시작 시 얼럿 출력 상태 초기화 ***
+            gameResultShown = false;
+            gameCompleteShown = false;
+            
             // 게임 시작 시 상태 초기화
             gameCompletedProcessed = false;
             isGameActive = true;

@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 // 데이터베이스 연결 정보
 $serverName = "127.0.0.1";  
 $uid = "sa";  
-$pwd = "SUNID";
+$pwd = "skrxk0908@";
 $database = "TelestrationGame";
 
 // 데이터베이스 연결
