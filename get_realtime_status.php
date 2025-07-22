@@ -15,7 +15,7 @@ function writeLog($message) {
 }
 
 try {
-    writeLog("=== 실시간 상태 조회 요청 시작 ===");
+    //writeLog("=== 실시간 상태 조회 요청 시작 ===");
     
     // 현재 진행 중인 게임 정보 가져오기
     $stmt = $conn->prepare("SELECT TOP 1 id, topics, current_turn, game_status FROM current_game ORDER BY id DESC");
@@ -31,7 +31,7 @@ try {
     $gameStatus = $gameInfo['game_status'];
     $topics = $gameInfo['topics'];
     
-    writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
+    //writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
     
     // 게임이 시작되지 않았거나 완료된 경우
     if ($gameStatus !== 'playing') {
@@ -47,7 +47,7 @@ try {
             ]
         ];
         
-        writeLog("게임 미진행 상태로 응답");
+        //writeLog("게임 미진행 상태로 응답");
         echo json_encode($response);
         exit;
     }
@@ -57,7 +57,7 @@ try {
     $stmt->execute([$gameId]);
     $players = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    writeLog("현재 게임 ({$gameId})의 참여 플레이어 수: " . count($players));
+    //writeLog("현재 게임 ({$gameId})의 참여 플레이어 수: " . count($players));
     
     if (empty($players)) {
         throw new Exception('현재 게임에 참여 중인 플레이어가 없습니다.');
@@ -85,7 +85,7 @@ try {
     $stmt->execute([$gameId]);
     $latestDrawings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    writeLog("실시간 그림 조회 완료: " . count($latestDrawings) . "개 그림 발견");
+    //writeLog("실시간 그림 조회 완료: " . count($latestDrawings) . "개 그림 발견");
     
     // 플레이어 데이터와 그림 데이터 결합
     $drawingsByPlayer = [];
@@ -115,7 +115,7 @@ try {
         
         $playersWithDrawings[] = $playerData;
         
-        writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($playerData['has_drawing'] ? 'yes' : 'no'));
+        //writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($playerData['has_drawing'] ? 'yes' : 'no'));
     }
     
     // 성공 응답
@@ -139,12 +139,12 @@ try {
         ]
     ];
     
-    writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings) . " (game_id={$gameId}로 필터링됨)");
+    //writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings) . " (game_id={$gameId}로 필터링됨)");
     echo json_encode($response);
     
 } catch (Exception $e) {
     $errorMessage = $e->getMessage();
-    writeLog("ERROR: " . $errorMessage);
+    //writeLog("ERROR: " . $errorMessage);
     
     $response = [
         'success' => false, 
@@ -158,6 +158,6 @@ try {
     
     echo json_encode($response);
 } finally {
-    writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
+    //writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
 }
 ?>
