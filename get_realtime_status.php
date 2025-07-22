@@ -18,7 +18,7 @@ try {
     //writeLog("=== 실시간 상태 조회 요청 시작 ===");
     
     // 현재 진행 중인 게임 정보 가져오기
-    $stmt = $conn->prepare("SELECT TOP 1 id, topics, current_turn, game_status FROM current_game ORDER BY id DESC");
+    $stmt = $conn->prepare("SELECT TOP 1 id, topics, current_turn, game_status, final_answer, is_correct FROM current_game ORDER BY id DESC");
     $stmt->execute();
     $gameInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -30,10 +30,35 @@ try {
     $currentTurn = $gameInfo['current_turn'];
     $gameStatus = $gameInfo['game_status'];
     $topics = $gameInfo['topics'];
+    $finalAnswer = $gameInfo['final_answer'];
+    $isCorrect = $gameInfo['is_correct'];
     
     //writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
     
-    // 게임이 시작되지 않았거나 완료된 경우
+    // 게임이 완료된 경우 - 정답/오답 정보와 함께 반환
+    if ($gameStatus === 'completed') {
+        $response = [
+            'success' => true,
+            'game_started' => false,
+            'game_status' => $gameStatus,
+            'is_correct' => $isCorrect == 1,
+            'correct_answer' => $topics,
+            'final_answer' => $finalAnswer,
+            'message' => '게임이 완료되었습니다.',
+            'debug' => [
+                'game_id' => $gameId,
+                'status' => $gameStatus,
+                'is_correct' => $isCorrect == 1,
+                'timestamp' => date('Y-m-d H:i:s')
+            ]
+        ];
+        
+        //writeLog("게임 완료 상태로 응답 (정답 여부: " . ($isCorrect == 1 ? 'true' : 'false') . ")");
+        echo json_encode($response);
+        exit;
+    }
+    
+    // 게임이 시작되지 않았거나 기타 상태
     if ($gameStatus !== 'playing') {
         $response = [
             'success' => true,

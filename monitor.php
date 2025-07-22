@@ -307,6 +307,77 @@
             75% { transform: translateX(3px); }
         }
         
+        /* 게임 완료 결과 화면 스타일 추가 */
+        .result-screen {
+            text-align: center;
+            padding: 60px 20px;
+            color: #333;
+        }
+        
+        .result-screen.correct {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            margin: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-screen.incorrect {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 15px;
+            margin: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-icon {
+            font-size: 5rem;
+            margin-bottom: 30px;
+            animation: bounce 2s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+        
+        .result-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-message {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+        
+        .answer-box {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px auto;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .answer-label {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .answer-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            word-break: break-all;
+        }
+        
         /* 반응형 디자인 */
         @media (max-width: 1200px) {
             .container {
@@ -380,6 +451,18 @@
             
             .player-card {
                 padding: 10px;
+            }
+            
+            .result-title {
+                font-size: 2rem;
+            }
+            
+            .result-message {
+                font-size: 1.1rem;
+            }
+            
+            .answer-text {
+                font-size: 1.3rem;
             }
         }
         
@@ -459,6 +542,7 @@
         let requestStartTime = 0;
         let averageResponseTime = 0;
         let responseTimeCount = 0;
+        let celebrationShown = false; // 축하 효과 중복 방지
         
         // 페이지 로드 시 시작
         window.addEventListener('load', function() {
@@ -516,7 +600,7 @@
                     if (data.game_started) {
                         displayGameInProgress(data);
                     } else {
-                        displayWaitingScreen(data.game_status || 'waiting');
+                        displayWaitingScreen(data.game_status || 'waiting', data);
                     }
                 } else {
                     displayErrorScreen(data.error || '알 수 없는 오류');
@@ -555,6 +639,9 @@
             
             // 플레이어 그리드 생성
             createPlayersGrid(players, gameInfo.current_turn);
+            
+            // 게임 진행 중이므로 축하 효과 플래그 초기화
+            celebrationShown = false;
         }
         
         // 플레이어 그리드 생성
@@ -610,32 +697,92 @@
         }
         
         // 대기 화면 표시
-        function displayWaitingScreen(status) {
-            document.getElementById('gameStatus').textContent = '⏰ 게임 시작 대기 중';
+        function displayWaitingScreen(status, data) {
             document.getElementById('gameInfoLeft').style.display = 'none';
             document.getElementById('gameInfoRight').style.display = 'none';
             
             let waitingText, waitingSubtext, waitingIcon;
+            let screenContent;
             
-            switch(status) {
-                case 'completed':
-                    waitingText = '게임 완료!';
-                    waitingSubtext = '새로운 게임을 기다리고 있습니다';
-                    waitingIcon = '🎉';
-                    break;
-                default:
-                    waitingText = '게임 시작을 기다리는 중...';
-                    waitingSubtext = '참여자들이 접속하면 게임이 시작됩니다';
-                    waitingIcon = '⏳';
+            // 게임 완료 시 정답/오답 결과 표시
+            if (status === 'completed' && data && typeof data.is_correct !== 'undefined') {
+                const isCorrect = data.is_correct;
+                const correctAnswer = data.correct_answer || '알 수 없음';
+                const finalAnswer = data.final_answer || '입력 없음';
+                
+                if (isCorrect) {
+                    // 정답 화면
+                    document.getElementById('gameStatus').textContent = '🎉 정답!';
+                    
+                    screenContent = `
+                        <div class="result-screen correct">
+                            <div class="result-icon">🎉</div>
+                            <div class="result-title">CORRECT!</div>
+                            <div class="result-message">완벽한 정답입니다!</div>
+                            <div class="answer-box">
+                                <div class="answer-label">정답</div>
+                                <div class="answer-text">${correctAnswer}</div>
+                            </div>
+                            <div class="answer-box">
+                                <div class="answer-label">플레이어 답안</div>
+                                <div class="answer-text">${finalAnswer}</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 정답 축하 효과 (한 번만)
+                    if (!celebrationShown) {
+                        setTimeout(() => showCelebration(), 500);
+                        celebrationShown = true;
+                    }
+                    
+                } else {
+                    // 오답 화면  
+                    document.getElementById('gameStatus').textContent = '💝 좋은 시도!';
+                    
+                    screenContent = `
+                        <div class="result-screen incorrect">
+                            <div class="result-icon">💝</div>
+                            <div class="result-title">GOOD TRY!</div>
+                            <div class="result-message">정말 잘했어요!</div>
+                            <div class="answer-box">
+                                <div class="answer-label">정답</div>
+                                <div class="answer-text">${correctAnswer}</div>
+                            </div>
+                            <div class="answer-box">
+                                <div class="answer-label">플레이어 답안</div>
+                                <div class="answer-text">${finalAnswer}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+            } else {
+                // 기존 대기 화면 로직
+                document.getElementById('gameStatus').textContent = '⏰ 게임 시작 대기 중';
+                
+                switch(status) {
+                    case 'completed':
+                        waitingText = '게임 완료!';
+                        waitingSubtext = '새로운 게임을 기다리고 있습니다';
+                        waitingIcon = '🎉';
+                        break;
+                    default:
+                        waitingText = '게임 시작을 기다리는 중...';
+                        waitingSubtext = '참여자들이 접속하면 게임이 시작됩니다';
+                        waitingIcon = '⏳';
+                }
+                
+                screenContent = `
+                    <div class="waiting-screen">
+                        <div class="waiting-icon">${waitingIcon}</div>
+                        <div class="waiting-text">${waitingText}</div>
+                        <div class="waiting-subtext">${waitingSubtext}</div>
+                    </div>
+                `;
             }
             
-            document.getElementById('mainContent').innerHTML = `
-                <div class="waiting-screen">
-                    <div class="waiting-icon">${waitingIcon}</div>
-                    <div class="waiting-text">${waitingText}</div>
-                    <div class="waiting-subtext">${waitingSubtext}</div>
-                </div>
-            `;
+            document.getElementById('mainContent').innerHTML = screenContent;
         }
         
         // 에러 화면 표시
