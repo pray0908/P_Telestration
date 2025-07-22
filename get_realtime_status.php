@@ -15,7 +15,7 @@ function writeLog($message) {
 }
 
 try {
-    writeLog("=== 실시간 상태 조회 요청 시작 ===");
+    //writeLog("=== 실시간 상태 조회 요청 시작 ===");
     
     // 현재 진행 중인 게임 정보 가져오기
     $stmt = $conn->prepare("SELECT TOP 1 id, topics, current_turn, game_status FROM current_game ORDER BY id DESC");
@@ -31,7 +31,7 @@ try {
     $gameStatus = $gameInfo['game_status'];
     $topics = $gameInfo['topics'];
     
-    writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
+    //writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
     
     // 게임이 시작되지 않았거나 완료된 경우
     if ($gameStatus !== 'playing') {
@@ -47,7 +47,7 @@ try {
             ]
         ];
         
-        writeLog("게임 미진행 상태로 응답");
+        //writeLog("게임 미진행 상태로 응답");
         echo json_encode($response);
         exit;
     }
@@ -61,7 +61,7 @@ try {
         throw new Exception('참여 중인 플레이어가 없습니다.');
     }
     
-    writeLog("참여 플레이어 수: " . count($players));
+    //writeLog("참여 플레이어 수: " . count($players));
     
     // 각 플레이어의 최신 실시간 그림 데이터 가져오기
     $playersWithDrawings = [];
@@ -97,7 +97,7 @@ try {
         
         $playersWithDrawings[] = $playerData;
         
-        writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($latestDrawing ? 'yes' : 'no'));
+        //writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($latestDrawing ? 'yes' : 'no'));
     }
     
     // 성공 응답
@@ -120,12 +120,12 @@ try {
         ]
     ];
     
-    writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings));
+    //writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings));
     echo json_encode($response);
     
 } catch (Exception $e) {
     $errorMessage = $e->getMessage();
-    writeLog("ERROR: " . $errorMessage);
+    //writeLog("ERROR: " . $errorMessage);
     
     $response = [
         'success' => false, 
@@ -139,6 +139,6 @@ try {
     
     echo json_encode($response);
 } finally {
-    writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
+    //writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
 }
 ?>

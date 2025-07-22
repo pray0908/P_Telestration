@@ -15,11 +15,11 @@ function writeLog($message) {
 }
 
 try {
-    writeLog("=== 실시간 그림 저장 요청 시작 ===");
+    //writeLog("=== 실시간 그림 저장 요청 시작 ===");
     
     // POST 데이터 받기
     $rawInput = file_get_contents('php://input');
-    writeLog("Raw input length: " . strlen($rawInput));
+    //writeLog("Raw input length: " . strlen($rawInput));
     
     $input = json_decode($rawInput, true);
     
@@ -31,7 +31,7 @@ try {
     $playerNumber = $input['player_number'] ?? 0;
     $gameId = $input['game_id'] ?? 0;
     
-    writeLog("입력 데이터: player_number={$playerNumber}, game_id={$gameId}, drawing_data_length=" . strlen($drawingData));
+    //writeLog("입력 데이터: player_number={$playerNumber}, game_id={$gameId}, drawing_data_length=" . strlen($drawingData));
     
     // 입력 검증
     if (empty($drawingData)) {
@@ -51,26 +51,26 @@ try {
         throw new Exception('올바르지 않은 이미지 데이터 형식입니다.');
     }
     
-    writeLog("입력 검증 완료");
+    //writeLog("입력 검증 완료");
     
     // 현재 게임이 진행 중인지 확인
     $stmt = $conn->prepare("SELECT COUNT(*) FROM current_game WHERE id = ? AND game_status = 'playing'");
     $stmt->execute([$gameId]);
     $gameExists = $stmt->fetchColumn();
     
-    writeLog("게임 존재 확인 쿼리 실행: game_id={$gameId}, result={$gameExists}");
+    //writeLog("게임 존재 확인 쿼리 실행: game_id={$gameId}, result={$gameExists}");
     
     if ($gameExists == 0) {
         throw new Exception('진행 중인 게임을 찾을 수 없습니다: game_id=' . $gameId);
     }
     
-    writeLog("게임 상태 확인 완료: game_id={$gameId}");
+    //writeLog("게임 상태 확인 완료: game_id={$gameId}");
     
     // 실시간 그림 데이터 저장
     $stmt = $conn->prepare("INSERT INTO real_time_drawings (game_id, player_number, drawing_data, created_at) VALUES (?, ?, ?, GETDATE())");
     $result = $stmt->execute([$gameId, $playerNumber, $drawingData]);
     
-    writeLog("INSERT 쿼리 실행: result=" . ($result ? 'true' : 'false'));
+    //writeLog("INSERT 쿼리 실행: result=" . ($result ? 'true' : 'false'));
     
     if (!$result) {
         throw new Exception('데이터베이스 저장 실패');
@@ -81,7 +81,7 @@ try {
     $lastIdResult = $stmt->fetch(PDO::FETCH_ASSOC);
     $insertedId = $lastIdResult['last_id'] ?? 'unknown';
     
-    writeLog("데이터베이스 저장 성공: inserted_id={$insertedId}");
+    //writeLog("데이터베이스 저장 성공: inserted_id={$insertedId}");
     
     // 성공 응답
     $response = [
@@ -95,12 +95,12 @@ try {
         ]
     ];
     
-    writeLog("응답 준비 완료: " . json_encode($response));
+    //writeLog("응답 준비 완료: " . json_encode($response));
     echo json_encode($response);
     
 } catch (Exception $e) {
     $errorMessage = $e->getMessage();
-    writeLog("ERROR: " . $errorMessage);
+    //writeLog("ERROR: " . $errorMessage);
     
     $response = [
         'success' => false, 
@@ -115,6 +115,6 @@ try {
     
     echo json_encode($response);
 } finally {
-    writeLog("=== 실시간 그림 저장 요청 종료 ===\n");
+    //writeLog("=== 실시간 그림 저장 요청 종료 ===\n");
 }
 ?>
