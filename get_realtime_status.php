@@ -15,7 +15,7 @@ function writeLog($message) {
 }
 
 try {
-    //writeLog("=== 실시간 상태 조회 요청 시작 ===");
+    writeLog("=== 실시간 상태 조회 요청 시작 ===");
     
     // 현재 진행 중인 게임 정보 가져오기
     $stmt = $conn->prepare("SELECT TOP 1 id, topics, current_turn, game_status FROM current_game ORDER BY id DESC");
@@ -31,7 +31,7 @@ try {
     $gameStatus = $gameInfo['game_status'];
     $topics = $gameInfo['topics'];
     
-    //writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
+    writeLog("게임 정보: game_id={$gameId}, current_turn={$currentTurn}, status={$gameStatus}");
     
     // 게임이 시작되지 않았거나 완료된 경우
     if ($gameStatus !== 'playing') {
@@ -47,7 +47,7 @@ try {
             ]
         ];
         
-        //writeLog("게임 미진행 상태로 응답");
+        writeLog("게임 미진행 상태로 응답");
         echo json_encode($response);
         exit;
     }
@@ -61,24 +61,39 @@ try {
         throw new Exception('참여 중인 플레이어가 없습니다.');
     }
     
-    //writeLog("참여 플레이어 수: " . count($players));
+    writeLog("참여 플레이어 수: " . count($players));
     
-    // 각 플레이어의 최신 실시간 그림 데이터 가져오기
+    // 각 플레이어의 최신 실시간 그림 데이터 가져오기 (최적화된 버전)
     $playersWithDrawings = [];
+    
+    // 하나의 쿼리로 모든 플레이어의 최신 그림을 한 번에 가져오기
+    $stmt = $conn->prepare("
+        WITH LatestDrawings AS (
+            SELECT 
+                game_id, 
+                player_number, 
+                drawing_data, 
+                created_at,
+                ROW_NUMBER() OVER (PARTITION BY player_number ORDER BY created_at DESC) as rn
+            FROM real_time_drawings 
+            WHERE game_id = ?
+        )
+        SELECT player_number, drawing_data, created_at
+        FROM LatestDrawings 
+        WHERE rn = 1
+    ");
+    $stmt->execute([$gameId]);
+    $latestDrawings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // 플레이어 데이터와 그림 데이터 결합
+    $drawingsByPlayer = [];
+    foreach ($latestDrawings as $drawing) {
+        $drawingsByPlayer[$drawing['player_number']] = $drawing;
+    }
     
     foreach ($players as $player) {
         $playerNumber = $player['player_number'];
         $playerName = $player['name'];
-        
-        // 해당 플레이어의 최신 실시간 그림 가져오기
-        $stmt = $conn->prepare("
-            SELECT TOP 1 drawing_data, created_at 
-            FROM real_time_drawings 
-            WHERE game_id = ? AND player_number = ? 
-            ORDER BY created_at DESC
-        ");
-        $stmt->execute([$gameId, $playerNumber]);
-        $latestDrawing = $stmt->fetch(PDO::FETCH_ASSOC);
         
         $playerData = [
             'player_number' => $playerNumber,
@@ -89,15 +104,16 @@ try {
             'last_updated' => null
         ];
         
-        if ($latestDrawing) {
+        if (isset($drawingsByPlayer[$playerNumber])) {
+            $drawing = $drawingsByPlayer[$playerNumber];
             $playerData['has_drawing'] = true;
-            $playerData['drawing_data'] = $latestDrawing['drawing_data'];
-            $playerData['last_updated'] = $latestDrawing['created_at'];
+            $playerData['drawing_data'] = $drawing['drawing_data'];
+            $playerData['last_updated'] = $drawing['created_at'];
         }
         
         $playersWithDrawings[] = $playerData;
         
-        //writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($latestDrawing ? 'yes' : 'no'));
+        writeLog("플레이어 {$playerNumber} ({$playerName}): drawing=" . ($playerData['has_drawing'] ? 'yes' : 'no'));
     }
     
     // 성공 응답
@@ -120,12 +136,12 @@ try {
         ]
     ];
     
-    //writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings));
+    writeLog("성공 응답 준비 완료: players=" . count($playersWithDrawings));
     echo json_encode($response);
     
 } catch (Exception $e) {
     $errorMessage = $e->getMessage();
-    //writeLog("ERROR: " . $errorMessage);
+    writeLog("ERROR: " . $errorMessage);
     
     $response = [
         'success' => false, 
@@ -139,6 +155,6 @@ try {
     
     echo json_encode($response);
 } finally {
-    //writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
+    writeLog("=== 실시간 상태 조회 요청 종료 ===\n");
 }
 ?>

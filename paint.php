@@ -562,7 +562,7 @@
                 } else {
                     console.log(`플레이어 ${playerNumber}: saveRealtimeDrawing 건너뛰기 - drawingEnabled: ${drawingEnabled}, currentGameId: ${currentGameId}`);
                 }
-            }, 500); // 0.5초마다 실행
+            }, 100); // 0.5초마다 실행
         }
         
         // 실시간 저장 중지

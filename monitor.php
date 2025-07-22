@@ -393,6 +393,9 @@
         let maxRetries = 5;
         let isUpdating = false;
         let lastGameData = null;
+        let requestStartTime = 0;
+        let averageResponseTime = 0;
+        let responseTimeCount = 0;
         
         // 페이지 로드 시 시작
         window.addEventListener('load', function() {
@@ -409,19 +412,20 @@
             // 즉시 첫 업데이트
             updateGameStatus();
             
-            // 1초마다 업데이트
+            // 100ms마다 업데이트 (사용자가 변경한 주기)
             updateInterval = setInterval(updateGameStatus, 100);
-            console.log('실시간 모니터링 시작 (1초 간격)');
+            console.log('실시간 모니터링 시작 (100ms 간격)');
         }
         
         // 게임 상태 업데이트
         function updateGameStatus() {
             if (isUpdating) {
-                console.log('이미 업데이트 중 - 건너뛰기');
+                console.log('이전 요청 진행 중 - 건너뛰기');
                 return;
             }
             
             isUpdating = true;
+            requestStartTime = performance.now(); // 요청 시작 시간 기록
             
             fetch('get_realtime_status.php')
             .then(response => {
@@ -431,10 +435,18 @@
                 return response.json();
             })
             .then(data => {
-                console.log('게임 상태 업데이트:', data);
+                // 응답 시간 계산
+                const responseTime = performance.now() - requestStartTime;
+                responseTimeCount++;
+                averageResponseTime = ((averageResponseTime * (responseTimeCount - 1)) + responseTime) / responseTimeCount;
                 
-                connectionRetries = 0; // 성공 시 재시도 카운터 리셋
-                updateConnectionStatus(true);
+                // 성능 로그 (10회마다)
+                if (responseTimeCount % 10 === 0) {
+                    console.log(`평균 응답 시간: ${averageResponseTime.toFixed(1)}ms`);
+                }
+                
+                connectionRetries = 0;
+                updateConnectionStatus(true, responseTime);
                 lastUpdateTime = Date.now();
                 
                 if (data.success) {
@@ -450,9 +462,10 @@
                 lastGameData = data;
             })
             .catch(error => {
-                console.error('업데이트 실패:', error);
+                const responseTime = performance.now() - requestStartTime;
+                console.error('업데이트 실패 (응답시간: ' + responseTime.toFixed(1) + 'ms):', error);
                 connectionRetries++;
-                updateConnectionStatus(false);
+                updateConnectionStatus(false, responseTime);
                 
                 if (connectionRetries >= maxRetries) {
                     displayErrorScreen('서버 연결 실패 (재시도 ' + connectionRetries + '/' + maxRetries + ')');
@@ -575,14 +588,14 @@
         }
         
         // 연결 상태 업데이트
-        function updateConnectionStatus(isOnline) {
+        function updateConnectionStatus(isOnline, responseTime = 0) {
             const statusElement = document.getElementById('connectionStatus');
             
             if (isOnline) {
-                statusElement.textContent = '🟢 연결됨';
+                statusElement.textContent = `🟢 연결됨 (${responseTime.toFixed(0)}ms)`;
                 statusElement.className = 'connection-status online';
             } else {
-                statusElement.textContent = '🔴 연결 끊김';
+                statusElement.textContent = `🔴 연결 끊김 (${responseTime.toFixed(0)}ms)`;
                 statusElement.className = 'connection-status offline';
             }
         }
