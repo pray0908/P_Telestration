@@ -26,20 +26,26 @@
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
+            min-height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: column;
         }
         
         .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px 25px;
             background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
             border-radius: 15px;
             color: white;
             position: relative;
             overflow: hidden;
+            min-height: 80px;
         }
         
         .header::before {
@@ -58,45 +64,63 @@
             100% { transform: rotate(360deg); }
         }
         
+        .title-section {
+            flex: 1;
+            text-align: center;
+            order: 2;
+        }
+        
         .game-title {
             font-family: 'Fredoka One', cursive;
-            font-size: 3rem;
-            margin-bottom: 10px;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             position: relative;
             z-index: 1;
         }
         
         .game-status {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 700;
             position: relative;
             z-index: 1;
         }
         
-        .game-info {
+
+        
+        .info-left {
             display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-top: 15px;
-            position: relative;
-            z-index: 1;
+            align-items: center;
+            order: 1;
+            flex: 1;
+            justify-content: flex-start;
+        }
+        
+        .info-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            order: 3;
+            flex: 1;
+            justify-content: flex-end;
         }
         
         .info-item {
             background: rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 25px;
+            padding: 8px 15px;
+            border-radius: 20px;
             font-weight: 700;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             backdrop-filter: blur(5px);
+            white-space: nowrap;
         }
         
         .players-grid {
             display: grid;
-            gap: 20px;
-            margin-top: 20px;
-            min-height: 500px;
+            gap: 15px;
+            margin-top: 15px;
+            flex: 1;
+            min-height: 0;
         }
         
         /* 그리드 레이아웃 - 참여자 수에 따라 동적 설정 */
@@ -160,19 +184,24 @@
             text-align: center;
             margin-bottom: 15px;
             margin-top: 25px; /* 현재 턴 배너 공간 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .player-number {
-            display: inline-block;
+            display: inline-flex;
             background: linear-gradient(45deg, #4ecdc4, #45b7d1);
             color: white;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
-            line-height: 40px;
+            align-items: center;
+            justify-content: center;
             font-weight: 900;
-            font-size: 1.2rem;
-            margin-bottom: 8px;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
         
         .player-name {
@@ -287,25 +316,6 @@
         /* 반응형 디자인 */
         @media (max-width: 1200px) {
             .container {
-                padding: 20px;
-            }
-            
-            .game-title {
-                font-size: 2.5rem;
-            }
-            
-            .game-info {
-                gap: 20px;
-                flex-wrap: wrap;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .container {
                 padding: 15px;
             }
             
@@ -313,12 +323,65 @@
                 font-size: 2rem;
             }
             
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px 20px;
+                min-height: auto;
+            }
+            
+            .info-left, .info-right {
+                flex: none !important;
+                justify-content: center !important;
+            }
+            
+            .title-section {
+                order: 1 !important;
+            }
+            
+            .info-left {
+                order: 2 !important;
+            }
+            
+            .info-right {
+                order: 3 !important;
+                gap: 10px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .game-title {
+                font-size: 1.8rem;
+            }
+            
             .game-status {
-                font-size: 1.2rem;
+                font-size: 1rem;
+            }
+            
+            .header {
+                padding: 12px 15px;
+            }
+            
+            .info-right {
+                gap: 8px;
+            }
+            
+            .info-item {
+                font-size: 0.85rem;
+                padding: 6px 12px;
             }
             
             .players-grid {
-                gap: 15px;
+                gap: 10px;
+                max-height: calc(100vh - 250px);
             }
             
             .player-card {
@@ -362,22 +425,28 @@
     
     <div class="container">
         <div class="header">
-            <h1 class="game-title">🎨 텔레스트레이션 LIVE</h1>
-            <div class="game-status" id="gameStatus">게임 상태 확인 중...</div>
-            <div class="game-info" id="gameInfo" style="display: none;">
+            <div class="info-left" id="gameInfoLeft" style="display: none;">
+                <div class="info-item">
+                    <span id="topicInfo">제시어: -</span>
+                </div>
+            </div>
+            
+            <div class="title-section">
+                <h1 class="game-title">🎨 텔레스트레이션 LIVE</h1>
+                <div class="game-status" id="gameStatus">게임 상태 확인 중...</div>
+            </div>
+            
+            <div class="info-right" id="gameInfoRight" style="display: none;">
                 <div class="info-item">
                     <span id="currentTurnInfo">턴: -</span>
                 </div>
                 <div class="info-item">
                     <span id="playerCountInfo">참여자: -</span>
                 </div>
-                <div class="info-item">
-                    <span id="topicInfo">제시어: -</span>
-                </div>
             </div>
         </div>
         
-        <div id="mainContent">
+        <div id="mainContent" style="flex: 1; display: flex; flex-direction: column;">
             <div class="waiting-screen">
                 <div class="waiting-icon">⏳</div>
                 <div class="waiting-text">게임 데이터 로딩 중...</div>
@@ -483,7 +552,8 @@
             
             // 헤더 정보 업데이트
             document.getElementById('gameStatus').textContent = '🎮 게임 진행 중';
-            document.getElementById('gameInfo').style.display = 'flex';
+            document.getElementById('gameInfoLeft').style.display = 'flex';
+            document.getElementById('gameInfoRight').style.display = 'flex';
             
             document.getElementById('currentTurnInfo').textContent = `턴: ${gameInfo.current_turn}번`;
             document.getElementById('playerCountInfo').textContent = `참여자: ${gameInfo.total_players}명`;
@@ -501,7 +571,7 @@
             const gridClass = getGridClass(players.length);
             
             mainContent.innerHTML = `
-                <div class="players-grid ${gridClass}" id="playersGrid">
+                <div class="players-grid ${gridClass}" id="playersGrid" style="flex: 1; display: grid;">
                     ${players.map(player => createPlayerCard(player, currentTurn)).join('')}
                 </div>
             `;
@@ -548,7 +618,8 @@
         // 대기 화면 표시
         function displayWaitingScreen(status) {
             document.getElementById('gameStatus').textContent = '⏰ 게임 시작 대기 중';
-            document.getElementById('gameInfo').style.display = 'none';
+            document.getElementById('gameInfoLeft').style.display = 'none';
+            document.getElementById('gameInfoRight').style.display = 'none';
             
             let waitingText, waitingSubtext, waitingIcon;
             
@@ -576,7 +647,8 @@
         // 에러 화면 표시
         function displayErrorScreen(errorMessage) {
             document.getElementById('gameStatus').textContent = '❌ 연결 오류';
-            document.getElementById('gameInfo').style.display = 'none';
+            document.getElementById('gameInfoLeft').style.display = 'none';
+            document.getElementById('gameInfoRight').style.display = 'none';
             
             document.getElementById('mainContent').innerHTML = `
                 <div class="error-screen">
