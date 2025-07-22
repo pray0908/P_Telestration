@@ -65,7 +65,6 @@
         }
         
         .title-section {
-            flex: 1;
             text-align: center;
             order: 2;
         }
@@ -184,24 +183,19 @@
             text-align: center;
             margin-bottom: 15px;
             margin-top: 25px; /* 현재 턴 배너 공간 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
         }
         
         .player-number {
-            display: inline-flex;
+            display: inline-block;
             background: linear-gradient(45deg, #4ecdc4, #45b7d1);
             color: white;
-            width: 30px;
-            height: 30px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            align-items: center;
-            justify-content: center;
+            line-height: 40px;
             font-weight: 900;
-            font-size: 1rem;
-            flex-shrink: 0;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
         }
         
         .player-name {
