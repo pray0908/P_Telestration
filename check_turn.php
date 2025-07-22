@@ -23,34 +23,39 @@ try {
             'game_started' => false,
             'is_my_turn' => false,
             'current_turn' => 1,
+            'game_id' => null,  // 게임 시작 전에는 null
             'debug' => "Game not started, waiting players: {$waitingPlayers}"
         ]);
         exit;
     }
     
-    // 게임 완료 상태 확인
+    // 게임 완료 상태 확인 (현재 게임 정보 가져오기)
     $stmt = $conn->prepare("SELECT id, game_status, final_answer, is_correct, topics, current_turn FROM current_game ORDER BY id DESC");
     $stmt->execute();
     $gameInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if ($gameInfo && $gameInfo['game_status'] === 'completed') {
+    if (!$gameInfo) {
+        throw new Exception('게임 정보를 찾을 수 없습니다.');
+    }
+    
+    $currentGameId = $gameInfo['id'];
+    $currentTurn = $gameInfo['current_turn'] ?? 1;
+    $gameStatus = $gameInfo['game_status'];
+    
+    if ($gameStatus === 'completed') {
         // 게임이 완료됨
         echo json_encode([
             'success' => true, 
             'game_started' => true,
             'game_completed' => true,
-            'game_id' => $gameInfo['id'],
+            'game_id' => $currentGameId,  // 중요: 게임 ID 반환
             'is_correct' => $gameInfo['is_correct'] == 1,
             'correct_answer' => $gameInfo['topics'],
             'final_answer' => $gameInfo['final_answer'],
-            'debug' => "Game completed, ID: {$gameInfo['id']}"
+            'debug' => "Game completed, ID: {$currentGameId}"
         ]);
         exit;
     }
-    
-    // 현재 턴 확인
-    $currentTurn = $gameInfo['current_turn'] ?? 1;
-    $currentGameId = $gameInfo['id'] ?? null;
     
     // 최대 플레이어 번호 확인 (마지막 순번)
     $stmt = $conn->prepare("SELECT MAX(player_number) FROM players WHERE logined = 1");
@@ -69,7 +74,7 @@ try {
         'success' => true, 
         'game_started' => true,
         'game_completed' => false,
-        'game_id' => $currentGameId,
+        'game_id' => $currentGameId,  // 중요: 항상 게임 ID 반환
         'is_my_turn' => $isMyTurn,
         'is_last_player' => $isLastPlayer,
         'current_turn' => $currentTurn,

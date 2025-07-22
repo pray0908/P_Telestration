@@ -464,6 +464,13 @@
         let gameCompleteExecuted = false;
         let isAnswerSubmitter = false;
         
+        // 실시간 저장 관련 변수
+        let realtimeSaveInterval = null;
+        let currentGameId = null;
+        let isRealtimeSaving = false;
+        let lastCanvasData = null;
+        let drawingStartTime = null;
+        
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
         const playerNumber = parseInt(urlParams.get('player_number')) || 0;
@@ -506,6 +513,13 @@
             if (!drawingEnabled) return;
             isDrawing = true;
             [lastX, lastY] = getMousePos(e);
+            
+            // 그리기 시작 시 실시간 저장 시작
+            if (!drawingStartTime) {
+                drawingStartTime = Date.now();
+                startRealtimeSaving();
+                console.log(`플레이어 ${playerNumber}: 그리기 시작 - 실시간 저장 활성화`);
+            }
         }
         
         function draw(e) {
@@ -525,9 +539,136 @@
             isDrawing = false;
         }
         
+        // 실시간 저장 시작
+        function startRealtimeSaving() {
+            console.log(`플레이어 ${playerNumber}: startRealtimeSaving 호출됨 - currentGameId: ${currentGameId}, realtimeSaveInterval: ${realtimeSaveInterval}`);
+            
+            if (realtimeSaveInterval) {
+                console.log(`플레이어 ${playerNumber}: 이미 실시간 저장이 실행 중입니다 - 종료`);
+                return;
+            }
+            
+            if (!currentGameId) {
+                console.log(`플레이어 ${playerNumber}: currentGameId가 null입니다 - 실시간 저장 시작할 수 없음`);
+                return;
+            }
+            
+            console.log(`플레이어 ${playerNumber}: 실시간 저장 시작 (0.5초 간격) - gameId: ${currentGameId}`);
+            
+            realtimeSaveInterval = setInterval(() => {
+                if (drawingEnabled && currentGameId) {
+                    console.log(`플레이어 ${playerNumber}: saveRealtimeDrawing 호출 시도`);
+                    saveRealtimeDrawing();
+                } else {
+                    console.log(`플레이어 ${playerNumber}: saveRealtimeDrawing 건너뛰기 - drawingEnabled: ${drawingEnabled}, currentGameId: ${currentGameId}`);
+                }
+            }, 500); // 0.5초마다 실행
+        }
+        
+        // 실시간 저장 중지
+        function stopRealtimeSaving() {
+            if (realtimeSaveInterval) {
+                clearInterval(realtimeSaveInterval);
+                realtimeSaveInterval = null;
+                drawingStartTime = null;
+                console.log(`플레이어 ${playerNumber}: 실시간 저장 중지`);
+            }
+        }
+        
+        // 실시간 그림 저장 함수
+        function saveRealtimeDrawing() {
+            console.log(`플레이어 ${playerNumber}: saveRealtimeDrawing 시작 - isRealtimeSaving: ${isRealtimeSaving}`);
+            
+            // 이미 저장 중이면 건너뛰기 (중복 방지)
+            if (isRealtimeSaving) {
+                console.log(`플레이어 ${playerNumber}: 실시간 저장 이미 진행 중 - 건너뛰기`);
+                return;
+            }
+            
+            // 현재 캔버스 데이터 가져오기
+            const currentCanvasData = canvas.toDataURL('image/png');
+            console.log(`플레이어 ${playerNumber}: 캔버스 데이터 길이: ${currentCanvasData.length}`);
+            
+            // 빈 캔버스 체크 (빈 캔버스는 저장하지 않음)
+            if (isCanvasEmpty()) {
+                console.log(`플레이어 ${playerNumber}: 빈 캔버스 - 실시간 저장 건너뛰기`);
+                return;
+            }
+            
+            // 이전 데이터와 동일하면 저장하지 않음 (변화 없음)
+            if (lastCanvasData === currentCanvasData) {
+                console.log(`플레이어 ${playerNumber}: 캔버스 변화 없음 - 실시간 저장 건너뛰기`);
+                return;
+            }
+            
+            isRealtimeSaving = true;
+            lastCanvasData = currentCanvasData;
+            
+            const data = {
+                game_id: currentGameId,
+                player_number: playerNumber,
+                drawing_data: currentCanvasData
+            };
+            
+            console.log(`플레이어 ${playerNumber}: 실시간 저장 시도 (game_id: ${currentGameId})`);
+            
+            fetch('save_realtime_drawing.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log(`플레이어 ${playerNumber}: 실시간 저장 성공`);
+                } else {
+                    console.error(`플레이어 ${playerNumber}: 실시간 저장 실패:`, result.error);
+                }
+            })
+            .catch(error => {
+                console.error(`플레이어 ${playerNumber}: 실시간 저장 오류:`, error);
+            })
+            .finally(() => {
+                isRealtimeSaving = false;
+                console.log(`플레이어 ${playerNumber}: 실시간 저장 완료 - isRealtimeSaving: false`);
+            });
+        }
+        
+        // 캔버스가 비어있는지 확인
+        function isCanvasEmpty() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            // 모든 픽셀이 투명(알파값 0)이거나 흰색인지 확인
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];     // Red
+                const g = data[i + 1]; // Green
+                const b = data[i + 2]; // Blue
+                const a = data[i + 3]; // Alpha
+                
+                // 투명하지 않고 흰색이 아닌 픽셀이 있으면 false
+                if (a > 0 && (r !== 255 || g !== 255 || b !== 255)) {
+                    console.log(`플레이어 ${playerNumber}: 캔버스에 그림이 있음 (픽셀 발견: r=${r}, g=${g}, b=${b}, a=${a})`);
+                    return false;
+                }
+            }
+            console.log(`플레이어 ${playerNumber}: 캔버스가 비어있음`);
+            return true;
+        }
+        
         function startCountdown(seconds = 10) {
             timerContainer.style.display = 'block';
             timerElement.textContent = seconds;
+            
+            // 게임 ID 설정 (실시간 저장을 위해) - 강화
+            if (lastGameId && !currentGameId) {
+                currentGameId = lastGameId;
+                console.log(`플레이어 ${playerNumber}: startCountdown에서 게임 ID 설정됨 - ${currentGameId}`);
+            }
+            
+            console.log(`플레이어 ${playerNumber}: 카운트다운 시작 - currentGameId: ${currentGameId}`);
             
             countdownTimer = setInterval(() => {
                 seconds--;
@@ -559,12 +700,21 @@
             drawingEnabled = false;
             canvas.classList.add('canvas-disabled');
             canvas.style.cursor = 'not-allowed';
+            
+            // 그리기 종료 시 실시간 저장 중지
+            stopRealtimeSaving();
+            console.log(`플레이어 ${playerNumber}: 그리기 비활성화 - 실시간 저장 중지`);
         }
         
         function enableDrawing() {
             drawingEnabled = true;
             canvas.classList.remove('canvas-disabled');
             canvas.style.cursor = 'crosshair';
+            
+            // 그리기 활성화 시 캔버스 상태 초기화
+            lastCanvasData = null;
+            drawingStartTime = null;
+            console.log(`플레이어 ${playerNumber}: 그리기 활성화`);
         }
         
         // 동적 캔버스 크기 조정 함수 (개선된 버전)
@@ -710,7 +860,12 @@
                 });
                 return;
             }
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 캔버스 지우기 시 실시간 저장 데이터 초기화
+            lastCanvasData = null;
+            console.log(`플레이어 ${playerNumber}: 캔버스 지우기 - 실시간 저장 데이터 초기화`);
         }
         
         // 페이지 로드 시 설정
@@ -719,7 +874,14 @@
             setupOrientationChange();
             resizeCanvas();
             
-            console.log(`플레이어 ${playerNumber}: 페이지 로드 완료`);
+            // 실시간 저장 상태 초기화
+            stopRealtimeSaving();
+            currentGameId = null;
+            lastCanvasData = null;
+            drawingStartTime = null;
+            isRealtimeSaving = false;
+            
+            console.log(`플레이어 ${playerNumber}: 페이지 로드 완료 - 실시간 저장 초기화`);
             checkMyTurn();
             
             if (playerNumber !== 1) {
@@ -732,6 +894,8 @@
         
         window.addEventListener('beforeunload', function() {
             stopTurnPolling();
+            stopRealtimeSaving();
+            console.log(`플레이어 ${playerNumber}: 페이지 종료 - 모든 인터벌 정리`);
         });
         
         // 주기적으로 턴 상태 체크
@@ -756,7 +920,7 @@
             }
         }
         
-        // 내 턴인지 확인 (수정된 로직)
+        // 내 턴인지 확인 (수정된 로직 + 게임 ID 설정 강화)
         function checkMyTurn() {
             console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
             
@@ -768,24 +932,44 @@
                 if (data.success) {
                     if (!data.game_started) {
                         console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
+                        // 게임 시작 전에는 실시간 저장 중지
+                        stopRealtimeSaving();
+                        currentGameId = null;
                         return;
+                    }
+                    
+                    // 게임 ID 설정 (실시간 저장을 위해) - 강화된 버전
+                    if (data.game_id) {
+                        currentGameId = data.game_id;
+                        console.log(`플레이어 ${playerNumber}: 현재 게임 ID 설정 - ${currentGameId}`);
+                        
+                        // 추가: 게임 ID 설정이 잘 되었는지 확인
+                        if (!currentGameId) {
+                            console.error(`플레이어 ${playerNumber}: 게임 ID 설정 실패!`);
+                        }
+                    } else {
+                        console.warn(`플레이어 ${playerNumber}: check_turn.php에서 game_id가 없음`);
                     }
                     
                     // 게임 완료 체크 (수정된 로직)
                     if (data.game_completed) {
                         console.log('게임 완료 감지!');
                         
-                        const currentGameId = String(data.game_id);
+                        // 게임 완료 시 실시간 저장 중지
+                        stopRealtimeSaving();
+                        currentGameId = null;
+                        
+                        const currentGameId_str = String(data.game_id);
                         const savedGameId = String(lastGameId || '');
                         
                         // 같은 게임이지만 아직 처리하지 않은 경우 허용
-                        if (lastGameId && savedGameId === currentGameId && gameCompletedProcessed) {
+                        if (lastGameId && savedGameId === currentGameId_str && gameCompletedProcessed) {
                             console.log(`게임 완료 이미 처리됨 - 무시`);
                             return;
                         }
                         
                         gameCompletedProcessed = true;
-                        lastGameId = currentGameId;
+                        lastGameId = currentGameId_str;
                         stopTurnPolling();
                         isGameActive = false;
                         
@@ -811,7 +995,13 @@
                         gameCompleteExecuted = false;
                         isAnswerSubmitter = false;
                         lastGameId = data.game_id;
+                        currentGameId = data.game_id;
                         isGameActive = false;
+                        
+                        // 새 게임 시작 시 실시간 저장 상태 초기화
+                        stopRealtimeSaving();
+                        lastCanvasData = null;
+                        drawingStartTime = null;
                     }
                     
                     if (gameCompletedProcessed) {
@@ -1083,6 +1273,10 @@
             gameCompleteExecuted = true;
             isGameActive = false;
             
+            // 게임 완료 시 실시간 저장 완전 중지
+            stopRealtimeSaving();
+            currentGameId = null;
+            
             Swal.close();
             enableDrawing();
             
@@ -1098,8 +1292,13 @@
                     width: '90%'
                 }).then(() => {
                     // 게임 완료 후 캔버스 지우기
-                    console.log(`플레이어 ${playerNumber}: 게임 완료 - 캔버스 지우기`);
+                    console.log(`플레이어 ${playerNumber}: 게임 완료 - 캔버스 지우기 및 실시간 저장 상태 초기화`);
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 실시간 저장 상태 완전 초기화
+                    lastCanvasData = null;
+                    drawingStartTime = null;
+                    isRealtimeSaving = false;
                     
                     // 상태 초기화
                     isGameActive = false;
@@ -1117,6 +1316,15 @@
         
         function restartPollingForNextGame() {
             isAnswerSubmitter = false;
+            
+            // 다음 게임을 위한 실시간 저장 상태 초기화
+            stopRealtimeSaving();
+            currentGameId = null;
+            lastCanvasData = null;
+            drawingStartTime = null;
+            isRealtimeSaving = false;
+            
+            console.log(`플레이어 ${playerNumber}: 다음 게임을 위한 상태 초기화 완료`);
             
             if (playerNumber !== 1) {
                 startTurnPolling();
@@ -1166,6 +1374,14 @@
             isGameActive = true;
             stopTurnPolling();
             
+            // 새 게임 시작 시 실시간 저장 상태 초기화
+            stopRealtimeSaving();
+            lastCanvasData = null;
+            drawingStartTime = null;
+            currentGameId = null;
+            
+            console.log(`플레이어 ${playerNumber}: 새 게임 시작 요청 - currentGameId 초기화됨`);
+            
             fetch('start_game.php', {
                 method: 'POST',
                 headers: {
@@ -1177,6 +1393,17 @@
                 if (data.success) {
                     gameCompletedProcessed = false;
                     lastGameId = null;
+                    
+                    // 게임 ID 설정 (중요!)
+                    if (data.game_id) {
+                        currentGameId = data.game_id;
+                        console.log(`플레이어 ${playerNumber}: 게임 ID 설정됨 - ${currentGameId}`);
+                    } else {
+                        console.error(`플레이어 ${playerNumber}: start_game.php에서 game_id가 없음!`);
+                    }
+                    
+                    console.log(`플레이어 ${playerNumber}: 게임 시작 성공 응답:`, data);
+                    console.log(`플레이어 ${playerNumber}: 새 게임 시작 - 실시간 저장 준비 완료 (gameId: ${currentGameId})`);
                     
                     if (playerNumber === 1) {
                         Swal.fire({
@@ -1219,6 +1446,30 @@
             }
         `;
         document.head.appendChild(style);
+        
+        // 실시간 저장 기능 테스트용 함수들 (개발자 콘솔에서 사용 가능)
+        window.testRealtimeSaving = function() {
+            console.log('=== 실시간 저장 테스트 ===');
+            console.log('currentGameId:', currentGameId);
+            console.log('drawingEnabled:', drawingEnabled);
+            console.log('isRealtimeSaving:', isRealtimeSaving);
+            console.log('realtimeSaveInterval:', realtimeSaveInterval);
+            console.log('lastCanvasData length:', lastCanvasData ? lastCanvasData.length : 'null');
+            console.log('drawingStartTime:', drawingStartTime);
+            console.log('isCanvasEmpty():', isCanvasEmpty());
+        };
+        
+        window.forceRealtimeSave = function() {
+            console.log('=== 강제 실시간 저장 실행 ===');
+            if (currentGameId) {
+                saveRealtimeDrawing();
+            } else {
+                console.log('게임 ID가 없어서 저장할 수 없습니다.');
+            }
+        };
+        
+        console.log(`플레이어 ${playerNumber}: 실시간 저장 기능이 활성화되었습니다.`);
+        console.log('테스트 함수: window.testRealtimeSaving() 또는 window.forceRealtimeSave()');
     </script>
 </body>
 </html>

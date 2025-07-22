@@ -22,11 +22,15 @@ try {
     $stmt = $conn->prepare("DELETE FROM game_rounds");
     $stmt->execute();
     
-    // 3. logined > 1인 이전 게임 플레이어들만 삭제 (완료된 이전 게임들)
+    // 3. 이전 실시간 그림 데이터 삭제 (추가)
+    $stmt = $conn->prepare("DELETE FROM real_time_drawings");
+    $stmt->execute();
+    
+    // 4. logined > 1인 이전 게임 플레이어들만 삭제 (완료된 이전 게임들)
     $stmt = $conn->prepare("DELETE FROM players WHERE logined > 1");
     $stmt->execute();
     
-    // 4. 현재 게임 참여자들을 모두 logined=1로 설정 (게임 진행 상태)
+    // 5. 현재 게임 참여자들을 모두 logined=1로 설정 (게임 진행 상태)
     $stmt = $conn->prepare("UPDATE players SET logined = 1 WHERE logined IN (0, 1)");
     $stmt->execute();
     
@@ -50,13 +54,23 @@ try {
     $stmt = $conn->prepare("INSERT INTO current_game (topics, current_turn, game_status) VALUES (?, 1, 'playing')");
     $stmt->execute([$topic]);
     
+    // 새로 생성된 게임 ID 가져오기 (SQL Server 호환)
+    $stmt = $conn->query("SELECT @@IDENTITY AS last_id");
+    $lastIdResult = $stmt->fetch(PDO::FETCH_ASSOC);
+    $newGameId = $lastIdResult['last_id'];
+    
+    if (!$newGameId) {
+        throw new Exception('게임 ID 생성에 실패했습니다.');
+    }
+    
     echo json_encode([
         'success' => true, 
+        'game_id' => $newGameId,  // 중요: 게임 ID 반환
         'topic' => $topic,
         'player_count' => $playerCount,
         'max_player_number' => $maxPlayerNumber,
         'current_players' => $currentPlayers,
-        'debug' => "Game restarted with {$playerCount} players (1 to {$maxPlayerNumber})"
+        'debug' => "Game started with ID {$newGameId}, {$playerCount} players (1 to {$maxPlayerNumber})"
     ]);
     
 } catch (Exception $e) {
