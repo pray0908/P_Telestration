@@ -1,7 +1,7 @@
 USE [TelestrationGame]
 GO
 
-/****** Object:  Table [dbo].[game_rounds]    Script Date: 2025-07-17 오전 10:01:04 ******/
+/****** Object:  Table [dbo].[game_rounds]    Script Date: 2025-07-22 오후 8:57:26 ******/
 SET ANSI_NULLS ON
 GO
 

@@ -1,17 +1,23 @@
 USE [TelestrationGame]
 GO
 
-/****** Object:  Table [dbo].[current_game]    Script Date: 2025-07-17 오전 10:00:43 ******/
+/****** Object:  Table [dbo].[current_game]    Script Date: 2025-07-22 오후 8:57:03 ******/
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
 
+SET ANSI_PADDING ON
+GO
+
 CREATE TABLE [dbo].[current_game](
 	[id] [int] IDENTITY(1,1) NOT NULL,
 	[topics] [nvarchar](50) NULL,
 	[current_turn] [int] NULL,
+	[game_status] [varchar](20) NULL,
+	[final_answer] [nvarchar](50) NULL,
+	[is_correct] [bit] NULL,
  CONSTRAINT [PK_current_game] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
@@ -20,10 +26,25 @@ CREATE TABLE [dbo].[current_game](
 
 GO
 
+SET ANSI_PADDING OFF
+GO
+
 ALTER TABLE [dbo].[current_game] ADD  DEFAULT ((1)) FOR [current_turn]
 GO
 
+ALTER TABLE [dbo].[current_game] ADD  DEFAULT ('playing') FOR [game_status]
+GO
+
 EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'현재 턴 플레이어 번호' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'current_game', @level2type=N'COLUMN',@level2name=N'current_turn'
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'게임 상태 (playing, completed)' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'current_game', @level2type=N'COLUMN',@level2name=N'game_status'
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'최종 답안' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'current_game', @level2type=N'COLUMN',@level2name=N'final_answer'
+GO
+
+EXEC sys.sp_addextendedproperty @name=N'MS_Description', @value=N'정답 여부' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'current_game', @level2type=N'COLUMN',@level2name=N'is_correct'
 GO
 
 
