@@ -5,7 +5,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>텔레스트레이션 - 그림판</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.32/sweetalert2.min.css">
@@ -16,47 +16,56 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
         
         body {
             font-family: 'Noto Sans KR', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            overflow-x: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            padding: 0;
         }
         
         .container {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            max-width: 1000px;
-            margin: 0 auto;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
         }
         
         .header {
+            flex-shrink: 0;
             text-align: center;
-            margin-bottom: 30px;
             background: rgba(255, 255, 255, 0.9);
-            padding: 30px 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 8px 12px;
             backdrop-filter: blur(10px);
-            position: relative;
-            overflow: hidden;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
         
         .player-name {
             font-family: 'Fredoka One', cursive;
-            font-size: 2.5rem;
+            font-size: 1.3rem;
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
             background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: gradientShift 3s ease-in-out infinite;
-            margin-bottom: 5px;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            margin: 0;
         }
         
         @keyframes gradientShift {
@@ -64,27 +73,21 @@
             50% { background-position: 100% 50%; }
         }
         
-        .subtitle {
-            color: #666;
-            font-size: 1.1rem;
-            font-weight: 400;
-        }
-        
         .timer-container {
-            margin-top: 20px;
+            margin-top: 5px;
             text-align: center;
         }
         
         .timer {
             font-family: 'Fredoka One', cursive;
-            font-size: 3rem;
+            font-size: 1.8rem;
             background: linear-gradient(45deg, #ff6b6b, #feca57);
             background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             animation: gradientShift 1s ease-in-out infinite, pulse 1s ease-in-out infinite;
-            margin-bottom: 5px;
+            margin: 0;
         }
         
         .timer.warning {
@@ -99,14 +102,15 @@
         
         .timer-label {
             color: #666;
-            font-size: 1rem;
+            font-size: 0.7rem;
             font-weight: 600;
+            margin: 0;
         }
         
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
         }
         
         .canvas-disabled {
@@ -116,117 +120,90 @@
         }
         
         .canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             background: rgba(255, 255, 255, 0.95);
-            padding: 25px;
-            border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            margin: 8px;
+            border-radius: 12px;
             backdrop-filter: blur(10px);
-            margin-bottom: 20px;
+            padding: 8px;
+            overflow: hidden;
         }
         
         #canvas {
-            border: 3px solid #e0e0e0;
-            border-radius: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
             background-color: white;
             cursor: crosshair;
             touch-action: none;
             display: block;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
+            max-width: 100%;
+            max-height: 100%;
         }
         
-        #canvas:hover {
+        #canvas:active {
             border-color: #4ecdc4;
-            box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
         }
         
         .controls {
+            flex-shrink: 0;
             display: flex;
-            gap: 15px;
+            gap: 8px;
             justify-content: center;
-            flex-wrap: wrap;
+            align-items: center;
             background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            padding: 8px 12px;
             backdrop-filter: blur(10px);
-            margin-bottom: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            flex-wrap: wrap;
         }
         
         .control-btn {
             background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             color: white;
-            font-size: 1rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            padding: 12px 25px;
+            padding: 6px 12px;
             border: none;
-            border-radius: 25px;
+            border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             font-family: 'Noto Sans KR', sans-serif;
-        }
-        
-        .control-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
         }
         
         .control-btn:active {
-            transform: translateY(0);
+            transform: scale(0.95);
         }
         
         .color-picker {
             display: flex;
-            gap: 10px;
+            gap: 6px;
             align-items: center;
         }
         
         .color-btn {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #fff;
+            width: 28px;
+            height: 28px;
+            border: 2px solid #fff;
             border-radius: 50%;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
         
-        .color-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        .color-btn:active {
+            transform: scale(0.9);
         }
         
         .color-btn.active {
             border-color: #333;
-            transform: scale(1.2);
-        }
-        
-        .size-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #333;
-            font-weight: 600;
-        }
-        
-        .size-slider {
-            width: 100px;
-            height: 8px;
-            border-radius: 4px;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            outline: none;
-            cursor: pointer;
-        }
-        
-        .info {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 15px 25px;
-            border-radius: 10px;
-            backdrop-filter: blur(5px);
+            transform: scale(1.1);
         }
         
         .floating-elements {
@@ -241,9 +218,9 @@
         
         .floating-element {
             position: absolute;
-            opacity: 0.1;
+            opacity: 0.05;
             animation: float 8s ease-in-out infinite;
-            font-size: 2rem;
+            font-size: 1.5rem;
         }
         
         .floating-element:nth-child(1) {
@@ -278,45 +255,142 @@
         
         @keyframes float {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-30px) rotate(180deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
         
-        @media (max-width: 900px) {
-            .player-name {
-                font-size: 2rem;
+        /* 가로 모드 (landscape) */
+        @media screen and (orientation: landscape) {
+            .header {
+                padding: 6px 10px;
             }
             
-            #canvas {
-                width: 100%;
-                max-width: 600px;
-                height: 400px;
+            .player-name {
+                font-size: 1.1rem;
+            }
+            
+            .timer {
+                font-size: 1.5rem;
+            }
+            
+            .timer-label {
+                font-size: 0.6rem;
             }
             
             .controls {
-                flex-direction: column;
-                align-items: center;
+                padding: 6px 10px;
+                gap: 6px;
             }
             
-            .container {
-                padding: 10px;
+            .control-btn {
+                font-size: 0.7rem;
+                padding: 5px 10px;
+            }
+            
+            .color-btn {
+                width: 24px;
+                height: 24px;
             }
         }
         
-        @media (max-width: 600px) {
-            .player-name {
-                font-size: 1.8rem;
-            }
-            
+        /* 세로 모드 (portrait) */
+        @media screen and (orientation: portrait) {
             .header {
-                padding: 20px 25px;
+                padding: 10px 12px;
             }
             
-            .canvas-container {
-                padding: 15px;
+            .player-name {
+                font-size: 1.4rem;
             }
             
-            #canvas {
-                height: 300px;
+            .timer {
+                font-size: 2rem;
+            }
+            
+            .timer-label {
+                font-size: 0.8rem;
+            }
+            
+            .controls {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            
+            .control-btn {
+                font-size: 0.85rem;
+                padding: 7px 14px;
+            }
+            
+            .color-btn {
+                width: 30px;
+                height: 30px;
+            }
+        }
+        
+        /* 매우 작은 화면 */
+        @media screen and (max-height: 500px) {
+            .header {
+                padding: 4px 8px;
+            }
+            
+            .player-name {
+                font-size: 1rem;
+            }
+            
+            .timer {
+                font-size: 1.3rem;
+            }
+            
+            .timer-label {
+                font-size: 0.5rem;
+            }
+            
+            .controls {
+                padding: 4px 8px;
+                gap: 4px;
+            }
+            
+            .control-btn {
+                font-size: 0.65rem;
+                padding: 4px 8px;
+            }
+            
+            .color-btn {
+                width: 22px;
+                height: 22px;
+            }
+        }
+        
+        /* 매우 큰 태블릿 */
+        @media screen and (min-width: 768px) {
+            .header {
+                padding: 12px 15px;
+            }
+            
+            .player-name {
+                font-size: 1.6rem;
+            }
+            
+            .timer {
+                font-size: 2.2rem;
+            }
+            
+            .timer-label {
+                font-size: 0.9rem;
+            }
+            
+            .controls {
+                padding: 12px 15px;
+                gap: 10px;
+            }
+            
+            .control-btn {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+            }
+            
+            .color-btn {
+                width: 32px;
+                height: 32px;
             }
         }
     </style>
@@ -333,7 +407,6 @@
     <div class="container">
         <div class="header">
             <h1 class="player-name" id="playerName">그림판</h1>
-            <p class="subtitle">마음껏 그림을 그려보세요!</p>
             <div class="timer-container" id="timerContainer" style="display: none;">
                 <div class="timer" id="timer">10</div>
                 <div class="timer-label">남은 시간</div>
@@ -341,7 +414,7 @@
         </div>
         
         <div class="canvas-container">
-            <canvas id="canvas" width="800" height="600"></canvas>
+            <canvas id="canvas"></canvas>
         </div>
         
         <div class="controls">
@@ -356,12 +429,6 @@
                 <div class="color-btn" data-color="#54a0ff" style="background-color: #54a0ff;"></div>
             </div>
             
-            <div class="size-control">
-                <span>굵기:</span>
-                <input type="range" class="size-slider" id="brushSize" min="1" max="20" value="2">
-                <span id="sizeDisplay">2px</span>
-            </div>
-            
             <button class="control-btn" onclick="clearCanvas()">지우기</button>
             <?php 
             $playerNumber = $_GET['player_number'] ?? 0;
@@ -370,18 +437,12 @@
             <button class="control-btn start-btn" id="startBtn">게임 시작</button>
             <?php endif; ?>
         </div>
-        
-        <div class="info">
-            마우스나 터치를 이용해서 그림을 그려보세요!
-        </div>
     </div>
 
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const playerNameElement = document.getElementById('playerName');
-        const brushSizeSlider = document.getElementById('brushSize');
-        const sizeDisplay = document.getElementById('sizeDisplay');
         const colorButtons = document.querySelectorAll('.color-btn');
         const timerContainer = document.getElementById('timerContainer');
         const timerElement = document.getElementById('timer');
@@ -390,7 +451,7 @@
         let lastX = 0;
         let lastY = 0;
         let currentColor = '#000000';
-        let currentSize = 2;
+        let currentSize = 3;
         let drawingEnabled = true;
         let countdownTimer = null;
         let currentRound = 1;
@@ -398,14 +459,10 @@
         let isGameActive = false;
         let isLastPlayer = false;
         let maxPlayerNumber = 0;
-        let gameCompletedProcessed = false; // 게임 완료 처리 플래그
-        let lastGameId = null; // 마지막 게임 ID 추적
-        let gameCompleteExecuted = false; // gameComplete 실행 방지 플래그
-        let isAnswerSubmitter = false; // 정답 제출자 여부 (중복 방지용)
-        
-        // *** 얼럿 중복 출력 방지 변수 추가 ***
-        let gameResultShown = false; // 게임 결과 얼럿(정답/오답) 출력 여부
-        let gameCompleteShown = false; // 게임 완료 얼럿 출력 여부
+        let gameCompletedProcessed = false;
+        let lastGameId = null;
+        let gameCompleteExecuted = false;
+        let isAnswerSubmitter = false;
         
         // URL에서 플레이어 번호 가져오기
         const urlParams = new URLSearchParams(window.location.search);
@@ -426,21 +483,12 @@
         // 색상 선택 이벤트
         colorButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // 모든 버튼의 active 클래스 제거
                 colorButtons.forEach(btn => btn.classList.remove('active'));
-                // 클릭된 버튼에 active 클래스 추가
                 this.classList.add('active');
                 
                 currentColor = this.dataset.color;
                 ctx.strokeStyle = currentColor;
             });
-        });
-        
-        // 브러시 크기 조절
-        brushSizeSlider.addEventListener('input', function() {
-            currentSize = this.value;
-            ctx.lineWidth = currentSize;
-            sizeDisplay.textContent = currentSize + 'px';
         });
         
         // 마우스 이벤트
@@ -494,7 +542,6 @@
                     disableDrawing();
                     timerContainer.style.display = 'none';
                     
-                    // 그림 저장
                     saveDrawing();
                     
                     Swal.fire({
@@ -520,6 +567,71 @@
             canvas.style.cursor = 'crosshair';
         }
         
+        // 동적 캔버스 크기 조정 함수 (개선된 버전)
+        function resizeCanvas() {
+            const container = document.querySelector('.canvas-container');
+            const containerRect = container.getBoundingClientRect();
+            
+            // 컨테이너 크기에서 패딩 제외 (실제로 사용할 수 있는 공간)
+            const availableWidth = containerRect.width - 16; // padding 8px * 2
+            const availableHeight = containerRect.height - 16; // padding 8px * 2
+            
+            // 사용 가능한 공간의 95%를 활용 (여백 최소화)
+            let canvasWidth = Math.floor(availableWidth * 0.95);
+            let canvasHeight = Math.floor(availableHeight * 0.95);
+            
+            // 최소 크기 보장
+            canvasWidth = Math.max(280, canvasWidth);
+            canvasHeight = Math.max(180, canvasHeight);
+            
+            // 최대 크기 제한 (너무 커지지 않도록)
+            canvasWidth = Math.min(1200, canvasWidth);
+            canvasHeight = Math.min(800, canvasHeight);
+            
+            // 캔버스 크기 설정
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            
+            // CSS로도 크기 명시적 설정 (중요!)
+            canvas.style.width = canvasWidth + 'px';
+            canvas.style.height = canvasHeight + 'px';
+            
+            // 캔버스 크기 변경 후 설정 재적용
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            console.log(`Canvas resized: ${canvasWidth}x${canvasHeight} (container: ${availableWidth}x${availableHeight})`);
+        }
+        
+        // 화면 크기 변경 감지
+        function setupResizeObserver() {
+            // ResizeObserver가 지원되는 경우
+            if (window.ResizeObserver) {
+                const resizeObserver = new ResizeObserver(entries => {
+                    resizeCanvas();
+                });
+                resizeObserver.observe(document.querySelector('.canvas-container'));
+            } else {
+                // 폴백: resize 이벤트 사용
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(resizeCanvas, 100);
+                });
+            }
+        }
+        
+        // 화면 회전 감지
+        function setupOrientationChange() {
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    resizeCanvas();
+                }, 300); // 회전 애니메이션 완료 대기
+            });
+        }
+        
         // 그림 저장
         function saveDrawing() {
             console.log(`플레이어 ${playerNumber}: 그림 저장 시작`);
@@ -540,16 +652,11 @@
             .then(data => {
                 if (data.success) {
                     console.log('그림 저장 성공:', data);
-                    console.log(`현재 턴이 ${data.next_turn}으로 변경됨`);
                     
-                    // 게임 완료 후 대기 상태로 전환
                     isGameActive = false;
                     
-                    // 저장 완료 후 대기 화면으로 전환
                     setTimeout(() => {
                         showWaitingScreen();
-                        
-                        // 모든 플레이어가 폴링 시작 (자신의 턴이 다시 올 수 있으므로)
                         console.log(`플레이어 ${playerNumber}: 폴링 재시작`);
                         startTurnPolling();
                     }, 3000);
@@ -564,9 +671,12 @@
         
         function getMousePos(e) {
             const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
             return [
-                e.clientX - rect.left,
-                e.clientY - rect.top
+                (e.clientX - rect.left) * scaleX,
+                (e.clientY - rect.top) * scaleY
             ];
         }
         
@@ -603,33 +713,15 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
         
-        // 반응형 캔버스 크기 조정
-        function resizeCanvas() {
-            const container = document.querySelector('.canvas-container');
-            const containerWidth = container.clientWidth - 50; // 패딩 고려
-            
-            if (window.innerWidth <= 900) {
-                canvas.width = Math.min(600, containerWidth);
-                canvas.height = window.innerWidth <= 600 ? 300 : 400;
-            } else {
-                canvas.width = 800;
-                canvas.height = 600;
-            }
-            
-            // 캔버스 크기 변경 후 설정 재적용
-            ctx.strokeStyle = currentColor;
-            ctx.lineWidth = currentSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-        }
-        
-        // 페이지 로드 및 리사이즈 시 캔버스 크기 조정
+        // 페이지 로드 시 설정
         window.addEventListener('load', function() {
+            setupResizeObserver();
+            setupOrientationChange();
             resizeCanvas();
+            
             console.log(`플레이어 ${playerNumber}: 페이지 로드 완료`);
             checkMyTurn();
             
-            // 1번이 아니면 주기적으로 턴 체크 시작
             if (playerNumber !== 1) {
                 console.log(`플레이어 ${playerNumber}: 폴링 시작 (초기)`);
                 startTurnPolling();
@@ -637,14 +729,12 @@
                 console.log(`플레이어 ${playerNumber}: 방장이므로 폴링 안함 (게임 시작 대기)`);
             }
         });
-        window.addEventListener('resize', resizeCanvas);
         
-        // 페이지 벗어날 때 폴링 정리
         window.addEventListener('beforeunload', function() {
             stopTurnPolling();
         });
         
-        // 주기적으로 턴 상태 체크 (1번 제외)
+        // 주기적으로 턴 상태 체크
         function startTurnPolling() {
             if (turnCheckInterval) {
                 clearInterval(turnCheckInterval);
@@ -652,14 +742,13 @@
             
             console.log(`플레이어 ${playerNumber}: 폴링 시작`);
             turnCheckInterval = setInterval(() => {
-                if (!isGameActive) { // 게임 중이 아닐 때만 체크
+                if (!isGameActive) {
                     console.log(`플레이어 ${playerNumber}: 턴 체크 중...`);
                     checkMyTurn();
                 }
-            }, 2000); // 2초마다 체크
+            }, 2000);
         }
         
-        // 턴 체크 중단
         function stopTurnPolling() {
             if (turnCheckInterval) {
                 clearInterval(turnCheckInterval);
@@ -667,131 +756,114 @@
             }
         }
         
-        // 내 턴인지 확인
-function checkMyTurn() {
-    console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
-    
-    fetch('check_turn.php?player_number=' + playerNumber)
-    .then(response => response.json())
-    .then(data => {
-        console.log(`플레이어 ${playerNumber}: 턴 확인 결과:`, data);
-        
-        if (data.success) {
-            if (!data.game_started) {
-                // 게임이 시작되지 않았음
-                console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
-                return;
-            }
+        // 내 턴인지 확인 (수정된 로직)
+        function checkMyTurn() {
+            console.log(`플레이어 ${playerNumber}: 턴 확인 중...`);
             
-            // 게임 완료 체크
-            if (data.game_completed) {
-                console.log('게임 완료 감지!');
-                console.log(`현재 lastGameId: ${lastGameId}, 새 game_id: ${data.game_id}`);
+            fetch('check_turn.php?player_number=' + playerNumber)
+            .then(response => response.json())
+            .then(data => {
+                console.log(`플레이어 ${playerNumber}: 턴 확인 결과:`, data);
                 
-                // 타입 통일 (문자열로 변환하여 비교)
-                const currentGameId = String(data.game_id);
-                const savedGameId = String(lastGameId || '');
-                
-                // 🔧 수정된 부분: 같은 게임이지만 아직 처리하지 않은 경우 허용
-                // 이전 로직: 같은 게임 ID면 무조건 차단
-                // 새 로직: 같은 게임 ID여도 gameCompletedProcessed가 false면 처리
-                if (lastGameId && savedGameId === currentGameId && gameCompletedProcessed) {
-                    console.log(`게임 완료 이미 처리됨 - 무시 (game_id: ${currentGameId})`);
-                    return;
-                }
-                
-                // 🔧 수정된 부분: gameCompletedProcessed 체크 제거
-                // 이유: 마지막 플레이어가 checkAnswer()에서 먼저 처리하더라도
-                // 다른 플레이어들도 동일한 게임 완료를 처리할 수 있도록 함
-                
-                // 게임 완료 플래그 설정 및 게임 ID 저장
-                gameCompletedProcessed = true;
-                lastGameId = currentGameId;
-                stopTurnPolling();
-                isGameActive = false;
-                
-                console.log(`게임 완료 처리 시작 (game_id: ${currentGameId})`);
-                
-                // 정답 제출자가 아닌 경우에만 이펙트 표시
-                // (정답 제출자는 checkAnswer()에서 이미 표시했음)
-                if (!isAnswerSubmitter) {
-                    if (data.is_correct) {
-                        showSuccessEffect(data.correct_answer, data.final_answer);
-                    } else {
-                        showFailureEffect(data.correct_answer, data.final_answer);
+                if (data.success) {
+                    if (!data.game_started) {
+                        console.log(`플레이어 ${playerNumber}: 게임 시작 대기 중`);
+                        return;
                     }
-                } else {
-                    // 정답 제출자인 경우 바로 gameComplete 호출
-                    // (이미 성공/실패 이펙트는 checkAnswer()에서 표시했음)
-                    setTimeout(() => {
-                        gameComplete();
-                    }, 4000); // 이펙트 시간과 동일하게 맞춤
+                    
+                    // 게임 완료 체크 (수정된 로직)
+                    if (data.game_completed) {
+                        console.log('게임 완료 감지!');
+                        
+                        const currentGameId = String(data.game_id);
+                        const savedGameId = String(lastGameId || '');
+                        
+                        // 같은 게임이지만 아직 처리하지 않은 경우 허용
+                        if (lastGameId && savedGameId === currentGameId && gameCompletedProcessed) {
+                            console.log(`게임 완료 이미 처리됨 - 무시`);
+                            return;
+                        }
+                        
+                        gameCompletedProcessed = true;
+                        lastGameId = currentGameId;
+                        stopTurnPolling();
+                        isGameActive = false;
+                        
+                        // 정답 제출자가 아닌 경우에만 이펙트 표시
+                        if (!isAnswerSubmitter) {
+                            if (data.is_correct) {
+                                showSuccessEffect(data.correct_answer, data.final_answer);
+                            } else {
+                                showFailureEffect(data.correct_answer, data.final_answer);
+                            }
+                        } else {
+                            setTimeout(() => {
+                                gameComplete();
+                            }, 4000);
+                        }
+                        return;
+                    }
+                    
+                    // 새 게임 시작 감지
+                    if (gameCompletedProcessed && data.game_id && String(data.game_id) !== String(lastGameId)) {
+                        console.log(`플레이어 ${playerNumber}: 새 게임 감지!`);
+                        gameCompletedProcessed = false;
+                        gameCompleteExecuted = false;
+                        isAnswerSubmitter = false;
+                        lastGameId = data.game_id;
+                        isGameActive = false;
+                    }
+                    
+                    if (gameCompletedProcessed) {
+                        console.log(`플레이어 ${playerNumber}: 새 게임 진행 중 - 플래그 초기화`);
+                        gameCompletedProcessed = false;
+                        gameCompleteExecuted = false;
+                    }
+                    
+                    isLastPlayer = data.is_last_player;
+                    maxPlayerNumber = data.max_player_number;
+                    
+                    if (data.is_my_turn) {
+                        console.log(`플레이어 ${playerNumber}: 내 턴 시작!`);
+                        isGameActive = true;
+                        stopTurnPolling();
+                        
+                        if (Swal.isVisible()) {
+                            Swal.close();
+                        }
+                        
+                        if (isLastPlayer) {
+                            showAnswerInput();
+                        } else if (playerNumber > 1) {
+                            showPreviousDrawingAndStart();
+                        }
+                    } else {
+                        if (!isGameActive && !Swal.isVisible()) {
+                            showWaitingScreen();
+                        }
+                    }
                 }
-                return;
-            }
-            
-            // 🔧 추가된 부분: 새 게임 시작 감지 로직 개선
-            // 현재 게임이 진행 중이고 이전에 완료된 게임과 다른 ID인 경우
-            if (gameCompletedProcessed && data.game_id && String(data.game_id) !== String(lastGameId)) {
-                console.log(`플레이어 ${playerNumber}: 새 게임 감지! (이전 ID: ${lastGameId}, 새 ID: ${data.game_id})`);
-                // 새 게임 상태로 초기화
-                gameCompletedProcessed = false;
-                gameCompleteExecuted = false;
-                isAnswerSubmitter = false; // 정답 제출자 플래그도 초기화
-                lastGameId = data.game_id; // 새 게임 ID로 업데이트
-                isGameActive = false;
-            }
-            
-            // 기존 로직 계속...
-            isLastPlayer = data.is_last_player;
-            maxPlayerNumber = data.max_player_number;
-            
-            console.log(`플레이어 ${playerNumber}번 - 현재 턴: ${data.current_turn}, 내 턴: ${data.is_my_turn}`);
-            
-            if (data.is_my_turn) {
-                // 내 턴 처리 로직...
-                console.log(`플레이어 ${playerNumber}: 내 턴 시작!`);
-                isGameActive = true;
-                stopTurnPolling();
-                
-                if (Swal.isVisible()) {
-                    Swal.close();
-                }
-                
-                if (isLastPlayer) {
-                    showAnswerInput();
-                } else if (playerNumber > 1) {
-                    showPreviousDrawingAndStart();
-                }
-            } else {
-                // 대기 상태 처리...
-                if (!isGameActive && !Swal.isVisible()) {
-                    showWaitingScreen();
-                }
-            }
+            })
+            .catch(error => {
+                console.error('턴 확인 실패:', error);
+            });
         }
-    })
-    .catch(error => {
-        console.error('턴 확인 실패:', error);
-    });
-}
         
         // 이전 그림 보여주고 게임 시작
         function showPreviousDrawingAndStart() {
-            Swal.close(); // 기존 대기 화면 닫기
+            Swal.close();
             
             fetch('get_previous_drawing.php?player_number=' + playerNumber + '&round_number=' + currentRound)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // SweetAlert 안에 이미지 직접 표시
                     Swal.fire({
                         title: '이전 그림',
                         html: `
                             <div style="text-align: center;">
-                                <p style="margin-bottom: 15px; font-size: 16px; color: #333;">이 그림을 보고 무엇인지 추측하여 다시 그려주세요!</p>
-                                <div style="border: 3px solid #e0e0e0; border-radius: 10px; overflow: hidden; display: inline-block; background: white;">
-                                    <img src="${data.drawing_data}" style="max-width: 400px; max-height: 300px; display: block;" />
+                                <p style="margin-bottom: 15px; font-size: 14px; color: #333;">이 그림을 보고 무엇인지 추측하여 다시 그려주세요!</p>
+                                <div style="border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; display: inline-block; background: white;">
+                                    <img src="${data.drawing_data}" style="max-width: 90vw; max-height: 40vh; display: block;" />
                                 </div>
                             </div>
                         `,
@@ -800,11 +872,10 @@ function checkMyTurn() {
                         showConfirmButton: false,
                         allowOutsideClick: false,
                         allowEscapeKey: false,
-                        width: '500px',
+                        width: '95%',
                         background: '#fff',
                         backdrop: 'rgba(0,0,0,0.8)'
                     }).then(() => {
-                        // 캔버스 지우고 그리기 시작
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                         Swal.fire({
                             title: '그리기 시작!',
@@ -814,36 +885,30 @@ function checkMyTurn() {
                             showConfirmButton: false
                         }).then(() => {
                             startCountdown(10);
-                            enableDrawing(); // 그리기 활성화!
+                            enableDrawing();
                         });
                     });
-                } else {
-                    console.error('이전 그림 가져오기 실패:', data.error);
                 }
-            })
-            .catch(error => {
-                console.error('이전 그림 가져오기 오류:', error);
             });
         }
         
-        // 제시어 입력 화면 (마지막 플레이어용)
+        // 제시어 입력 화면
         function showAnswerInput() {
-            Swal.close(); // 기존 대기 화면 닫기
+            Swal.close();
             
             fetch('get_previous_drawing.php?player_number=' + playerNumber + '&round_number=' + currentRound)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // SweetAlert 안에 이미지와 입력 폼 표시
                     Swal.fire({
                         title: '제시어를 맞춰주세요!',
                         html: `
                             <div style="text-align: center;">
-                                <p style="margin-bottom: 15px; font-size: 16px; color: #333;">이 그림이 나타내는 제시어를 입력해주세요!</p>
-                                <div style="border: 3px solid #e0e0e0; border-radius: 10px; overflow: hidden; display: inline-block; background: white; margin-bottom: 20px;">
-                                    <img src="${data.drawing_data}" style="max-width: 400px; max-height: 300px; display: block;" />
+                                <p style="margin-bottom: 15px; font-size: 14px; color: #333;">이 그림이 나타내는 제시어를 입력해주세요!</p>
+                                <div style="border: 2px solid #e0e0e0; border-radius: 8px; overflow: hidden; display: inline-block; background: white; margin-bottom: 15px;">
+                                    <img src="${data.drawing_data}" style="max-width: 90vw; max-height: 35vh; display: block;" />
                                 </div>
-                                <input type="text" id="answerInput" placeholder="제시어를 입력하세요..." style="width: 300px; padding: 12px; font-size: 16px; border: 2px solid #e0e0e0; border-radius: 8px; outline: none;" />
+                                <input type="text" id="answerInput" placeholder="제시어를 입력하세요..." style="width: 80%; max-width: 250px; padding: 10px; font-size: 14px; border: 2px solid #e0e0e0; border-radius: 6px; outline: none;" />
                             </div>
                         `,
                         icon: null,
@@ -852,7 +917,7 @@ function checkMyTurn() {
                         confirmButtonColor: '#4ecdc4',
                         allowOutsideClick: false,
                         allowEscapeKey: false,
-                        width: '550px',
+                        width: '95%',
                         background: '#fff',
                         backdrop: 'rgba(0,0,0,0.8)',
                         preConfirm: () => {
@@ -869,12 +934,10 @@ function checkMyTurn() {
                         }
                     });
                     
-                    // 입력 필드에 포커스
                     setTimeout(() => {
                         const input = document.getElementById('answerInput');
                         if (input) {
                             input.focus();
-                            // Enter 키로 제출 가능하도록
                             input.addEventListener('keypress', function(e) {
                                 if (e.key === 'Enter') {
                                     Swal.clickConfirm();
@@ -882,72 +945,49 @@ function checkMyTurn() {
                             });
                         }
                     }, 100);
-                } else {
-                    console.error('이전 그림 가져오기 실패:', data.error);
                 }
-            })
-            .catch(error => {
-                console.error('이전 그림 가져오기 오류:', error);
             });
         }
         
         // 제시어 정답 체크
-function checkAnswer(userAnswer) {
-    // 정답 제출자 플래그 설정
-    isAnswerSubmitter = true;
-    
-    fetch('check_answer.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            answer: userAnswer,
-            player_number: playerNumber
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            console.log(`플레이어 ${playerNumber}: 정답 제출자로서 직접 이펙트 표시`);
+        function checkAnswer(userAnswer) {
+            isAnswerSubmitter = true;
             
-            // 🔧 수정된 부분: gameCompletedProcessed 설정 추가
-            // 다른 플레이어들이 중복 처리하지 않도록 하면서도
-            // 동일한 게임 완료 이벤트는 처리할 수 있도록 함
-            gameCompletedProcessed = true;
-            lastGameId = data.current_game_id; // 현재 게임 ID 저장
-            
-            // 정답 제출자는 바로 이펙트 표시
-            if (data.is_correct) {
-                showSuccessEffect(data.correct_answer, data.user_answer);
-            } else {
-                showFailureEffect(data.correct_answer, data.user_answer);
-            }
-        } else {
-            Swal.fire({
-                title: '오류',
-                text: data.error,
-                icon: 'error'
+            fetch('check_answer.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    answer: userAnswer,
+                    player_number: playerNumber
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    gameCompletedProcessed = true;
+                    lastGameId = data.current_game_id;
+                    
+                    if (data.is_correct) {
+                        showSuccessEffect(data.correct_answer, data.user_answer);
+                    } else {
+                        showFailureEffect(data.correct_answer, data.user_answer);
+                    }
+                } else {
+                    Swal.fire({
+                        title: '오류',
+                        text: data.error,
+                        icon: 'error'
+                    });
+                }
             });
         }
-    })
-    .catch(error => {
-        Swal.fire({
-            title: '오류',
-            text: '정답 체크 중 오류가 발생했습니다.',
-            icon: 'error'
-        });
-    });
-}
         
-        // 정답 성공 이펙트
+        // 성공/실패 이펙트 (기존과 동일하지만 모바일 최적화)
         function showSuccessEffect(correctAnswer, userAnswer) {
             Swal.close();
             
-            // *** 게임 결과 얼럿 출력 완료 표시 ***
-            gameResultShown = true;
-            
-            // 성공 오버레이 생성
             const overlay = document.createElement('div');
             overlay.style.cssText = `
                 position: fixed;
@@ -968,50 +1008,32 @@ function checkAnswer(userAnswer) {
             `;
             
             overlay.innerHTML = `
-                <div id="fireworksContainer" style="position: absolute; width: 100%; height: 100%; pointer-events: none;"></div>
-                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 60px; border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px; font-weight: 300; letter-spacing: 2px; animation: slideInDown 0.8s ease-out;">🎉</div>
-                    <div style="font-size: 2.5rem; margin-bottom: 15px; font-weight: 700; animation: slideInUp 0.8s ease-out 0.2s both; color: #fff;">SUCCESS!</div>
-                    <div style="font-size: 1.3rem; margin-bottom: 30px; font-weight: 400; opacity: 0.9; animation: slideInUp 0.8s ease-out 0.4s both;">완벽한 정답입니다!</div>
-                    <div style="font-size: 1.1rem; margin-bottom: 10px; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.6s both;">
+                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 15px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 90%;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">🎉</div>
+                    <div style="font-size: 1.8rem; margin-bottom: 10px; font-weight: 700; color: #fff;">SUCCESS!</div>
+                    <div style="font-size: 1rem; margin-bottom: 20px; opacity: 0.9;">완벽한 정답입니다!</div>
+                    <div style="font-size: 0.9rem; margin-bottom: 8px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);">
                         <strong>정답:</strong> ${correctAnswer}
                     </div>
-                    <div style="font-size: 1.1rem; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.8s both;">
+                    <div style="font-size: 0.9rem; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);">
                         <strong>답안:</strong> ${userAnswer}
                     </div>
                 </div>
             `;
             
             document.body.appendChild(overlay);
-            console.log('성공 오버레이 생성됨:', overlay);
             
-            // 불꽃놀이 이펙트
-            createFireworks();
-            
-            // 4초 후 제거
             setTimeout(() => {
                 if (overlay && overlay.parentNode) {
-                    overlay.style.animation = 'fadeOut 0.5s ease-out';
-                    setTimeout(() => {
-                        overlay.remove();
-                        console.log('성공 오버레이 제거됨');
-                        enableDrawing(); // 그리기 다시 활성화
-                        
-                        // 이펙트 완료 후 gameComplete 호출
-                        gameComplete();
-                    }, 500);
+                    overlay.remove();
+                    gameComplete();
                 }
             }, 4000);
         }
         
-        // 오답 실패 이펙트
         function showFailureEffect(correctAnswer, userAnswer) {
             Swal.close();
             
-            // *** 게임 결과 얼럿 출력 완료 표시 ***
-            gameResultShown = true;
-            
-            // 실패 오버레이 생성
             const overlay = document.createElement('div');
             overlay.style.cssText = `
                 position: fixed;
@@ -1032,209 +1054,88 @@ function checkAnswer(userAnswer) {
             `;
             
             overlay.innerHTML = `
-                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 60px; border-radius: 20px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-                    <div style="font-size: 3.5rem; margin-bottom: 20px; font-weight: 300; letter-spacing: 2px; animation: slideInDown 0.8s ease-out;">💝</div>
-                    <div style="font-size: 2.5rem; margin-bottom: 15px; font-weight: 700; animation: slideInUp 0.8s ease-out 0.2s both; color: #fff;">GOOD TRY!</div>
-                    <div style="font-size: 1.3rem; margin-bottom: 30px; font-weight: 400; opacity: 0.9; animation: slideInUp 0.8s ease-out 0.4s both;">정말 잘했어요! 다음에 또 도전해보세요.</div>
-                    <div style="font-size: 1.1rem; margin-bottom: 10px; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.6s both;">
+                <div style="text-align: center; z-index: 1; background: rgba(255,255,255,0.1); padding: 30px 20px; border-radius: 15px; backdrop-filter: blur(10px); box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 90%;">
+                    <div style="font-size: 3rem; margin-bottom: 15px;">💝</div>
+                    <div style="font-size: 1.8rem; margin-bottom: 10px; font-weight: 700; color: #fff;">GOOD TRY!</div>
+                    <div style="font-size: 1rem; margin-bottom: 20px; opacity: 0.9;">정말 잘했어요!</div>
+                    <div style="font-size: 0.9rem; margin-bottom: 8px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);">
                         <strong>정답:</strong> ${correctAnswer}
                     </div>
-                    <div style="font-size: 1.1rem; padding: 12px 24px; background: rgba(255,255,255,0.2); border-radius: 25px; border: 1px solid rgba(255,255,255,0.3); animation: slideInUp 0.8s ease-out 0.8s both;">
+                    <div style="font-size: 0.9rem; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.3);">
                         <strong>답안:</strong> ${userAnswer}
                     </div>
                 </div>
             `;
             
             document.body.appendChild(overlay);
-            console.log('실패 오버레이 생성됨:', overlay);
             
-            // 4초 후 제거
             setTimeout(() => {
                 if (overlay && overlay.parentNode) {
-                    overlay.style.animation = 'fadeOut 0.5s ease-out';
-                    setTimeout(() => {
-                        overlay.remove();
-                        console.log('실패 오버레이 제거됨');
-                        enableDrawing(); // 그리기 다시 활성화
-                        
-                        // 이펙트 완료 후 gameComplete 호출
-                        gameComplete();
-                    }, 500);
+                    overlay.remove();
+                    gameComplete();
                 }
             }, 4000);
         }
         
-        // 불꽃놀이 생성
-        function createFireworks() {
-            const container = document.getElementById('fireworksContainer');
-            if (!container) {
-                console.log('불꽃놀이 컨테이너를 찾을 수 없음');
-                return;
-            }
+        function gameComplete() {
+            if (gameCompleteExecuted) return;
             
-            console.log('불꽃놀이 시작');
-            
-            // 여러 개의 불꽃 생성
-            for (let i = 0; i < 20; i++) {
-                setTimeout(() => {
-                    const firework = document.createElement('div');
-                    const color = getRandomColor();
-                    firework.style.cssText = `
-                        position: absolute;
-                        width: 6px;
-                        height: 6px;
-                        background: ${color};
-                        border-radius: 50%;
-                        left: ${Math.random() * 100}%;
-                        top: ${Math.random() * 100}%;
-                        box-shadow: 0 0 10px ${color}, 0 0 20px ${color}, 0 0 30px ${color};
-                        animation: sparkle 1.5s ease-out infinite;
-                    `;
-                    
-                    container.appendChild(firework);
-                    
-                    // 파티클 생성
-                    createParticles(container, firework.style.left, firework.style.top, color);
-                    
-                    // 애니메이션 완료 후 제거
-                    setTimeout(() => {
-                        if (firework && firework.parentNode) {
-                            firework.remove();
-                        }
-                    }, 1500);
-                }, i * 100);
-            }
-        }
-        
-        // 파티클 생성
-        function createParticles(container, x, y, color) {
-            for (let i = 0; i < 8; i++) {
-                setTimeout(() => {
-                    const particle = document.createElement('div');
-                    const angle = (i * 45) * (Math.PI / 180);
-                    const distance = 50 + Math.random() * 30;
-                    const endX = parseFloat(x) + Math.cos(angle) * distance;
-                    const endY = parseFloat(y) + Math.sin(angle) * distance;
-                    
-                    particle.style.cssText = `
-                        position: absolute;
-                        width: 3px;
-                        height: 3px;
-                        background: ${color};
-                        border-radius: 50%;
-                        left: ${x};
-                        top: ${y};
-                        transition: all 0.8s ease-out;
-                        opacity: 1;
-                    `;
-                    
-                    container.appendChild(particle);
-                    
-                    // 애니메이션 시작
-                    setTimeout(() => {
-                        particle.style.left = endX + '%';
-                        particle.style.top = endY + '%';
-                        particle.style.opacity = '0';
-                        particle.style.transform = 'scale(0)';
-                    }, 10);
-                    
-                    // 파티클 제거
-                    setTimeout(() => {
-                        if (particle && particle.parentNode) {
-                            particle.remove();
-                        }
-                    }, 1000);
-                }, i * 50);
-            }
-        }
-        
-        // 랜덤 컬러 생성
-        function getRandomColor() {
-            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-        
-// 🔧 restartPollingForNextGame() 함수 추가
-function restartPollingForNextGame() {
-    console.log(`플레이어 ${playerNumber}: 다음 게임을 위한 폴링 재시작`);
-    
-    // 정답 제출자 플래그 초기화 (새 게임을 위해)
-    isAnswerSubmitter = false;
-    
-    // 1번 플레이어가 아니면 폴링 시작
-    if (playerNumber !== 1) {
-        startTurnPolling();
-    }
-}
-
-// 🔧 gameComplete() 함수 수정 (기존 유지하되 주석 추가)
-function gameComplete() {
-    // 이미 실행되었다면 무시
-    if (gameCompleteExecuted) {
-        console.log(`플레이어 ${playerNumber}: gameComplete 이미 실행됨 - 무시`);
-        return;
-    }
-    
-    gameCompleteExecuted = true;
-    isGameActive = false;
-    
-    console.log(`플레이어 ${playerNumber}: gameComplete 실행 시작`);
-    
-    // 모든 대기 화면 닫기
-    Swal.close();
-    
-    setTimeout(() => {
-        Swal.fire({
-            title: '🎨 게임 완료!',
-            text: '텔레스트레이션 게임이 완료되었습니다!\n모든 플레이어가 수고하셨습니다!',
-            icon: 'success',
-            confirmButtonText: '확인',
-            confirmButtonColor: '#4ecdc4',
-            backdrop: 'rgba(0,0,0,0.8)',
-            allowOutsideClick: false
-        }).then(() => {
-            console.log(`플레이어 ${playerNumber}: 게임 완료 - 상태 초기화`);
-            
-            // 다음 게임을 위한 부분 초기화
+            gameCompleteExecuted = true;
             isGameActive = false;
-            isLastPlayer = false;
-            maxPlayerNumber = 0;
-            currentRound = 1;
-            gameCompleteExecuted = false;
             
-            console.log(`플레이어 ${playerNumber}: 다음 게임 시작 대기`);
+            Swal.close();
+            enableDrawing();
             
             setTimeout(() => {
-                restartPollingForNextGame();
-            }, 3000);
-        });
-    }, 1000);
-}
+                Swal.fire({
+                    title: '🎨 게임 완료!',
+                    text: '텔레스트레이션 게임이 완료되었습니다!\n모든 플레이어가 수고하셨습니다!',
+                    icon: 'success',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#4ecdc4',
+                    backdrop: 'rgba(0,0,0,0.8)',
+                    allowOutsideClick: false,
+                    width: '90%'
+                }).then(() => {
+                    // 게임 완료 후 캔버스 지우기
+                    console.log(`플레이어 ${playerNumber}: 게임 완료 - 캔버스 지우기`);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 상태 초기화
+                    isGameActive = false;
+                    isLastPlayer = false;
+                    maxPlayerNumber = 0;
+                    currentRound = 1;
+                    gameCompleteExecuted = false;
+                    
+                    setTimeout(() => {
+                        restartPollingForNextGame();
+                    }, 3000);
+                });
+            }, 1000);
+        }
         
-        // 디버깅용 테스트 함수 (개발자 콘솔에서 호출 가능)
-        window.testSuccessEffect = function() {
-            showSuccessEffect("사과", "사과");
-        };
-        
-        window.testFailureEffect = function() {
-            showFailureEffect("사과", "바나나");
-        };
+        function restartPollingForNextGame() {
+            isAnswerSubmitter = false;
+            
+            if (playerNumber !== 1) {
+                startTurnPolling();
+            }
+        }
         
         function showWaitingScreen() {
             disableDrawing();
             
-            // 이미 대기 화면이 표시 중이면 중복 호출 방지
-            if (Swal.isVisible()) {
-                return;
-            }
+            if (Swal.isVisible()) return;
             
             Swal.fire({
                 title: '대기 중...',
-                text: '다른 플레이어의 턴입니다. 잠시만 기다려주세요.',
+                text: '다른 플레이어의 턴입니다.',
                 icon: 'info',
                 allowOutsideClick: false,
                 allowEscapeKey: false,
-                showConfirmButton: false
+                showConfirmButton: false,
+                width: '90%'
             });
         }
         
@@ -1250,7 +1151,8 @@ function gameComplete() {
                     confirmButtonColor: '#4ecdc4',
                     cancelButtonColor: '#ff6b6b',
                     confirmButtonText: '시작',
-                    cancelButtonText: '취소'
+                    cancelButtonText: '취소',
+                    width: '90%'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         startGame();
@@ -1260,16 +1162,9 @@ function gameComplete() {
         }
         
         function startGame() {
-            // *** 게임 시작 시 얼럿 출력 상태 초기화 ***
-            gameResultShown = false;
-            gameCompleteShown = false;
-            
-            // 게임 시작 시 상태 초기화
             gameCompletedProcessed = false;
             isGameActive = true;
             stopTurnPolling();
-            
-            console.log(`플레이어 ${playerNumber}: 새 게임 시작 - 상태 초기화`);
             
             fetch('start_game.php', {
                 method: 'POST',
@@ -1280,13 +1175,9 @@ function gameComplete() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    console.log('게임 시작 성공:', data);
-                    
-                    // 새 게임 시작으로 상태 초기화
                     gameCompletedProcessed = false;
-                    lastGameId = null; // 새 게임이므로 ID 초기화
+                    lastGameId = null;
                     
-                    // 1번 플레이어에게만 단어 보여주기
                     if (playerNumber === 1) {
                         Swal.fire({
                             title: '제시어',
@@ -1296,50 +1187,38 @@ function gameComplete() {
                             showConfirmButton: false,
                             allowOutsideClick: false,
                             allowEscapeKey: false,
-                            background: '#fff',
-                            color: '#333',
-                            customClass: {
-                                title: 'swal-title',
-                                content: 'swal-content'
-                            }
+                            width: '90%'
                         }).then(() => {
                             Swal.fire({
                                 title: '그림 그리기 시작!',
                                 text: '제시어를 그려주세요!',
                                 icon: 'success',
                                 timer: 1500,
-                                showConfirmButton: false
+                                showConfirmButton: false,
+                                width: '90%'
                             }).then(() => {
-                                // 10초 카운트다운 시작
                                 startCountdown(10);
-                                enableDrawing(); // 그리기 활성화!
+                                enableDrawing();
                             });
                         });
-                    } else {
-                        Swal.fire({
-                            title: '게임 시작!',
-                            text: '게임이 시작되었습니다!',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
                     }
-                } else {
-                    Swal.fire({
-                        title: '오류',
-                        text: data.error,
-                        icon: 'error'
-                    });
                 }
-            })
-            .catch(error => {
-                Swal.fire({
-                    title: '오류',
-                    text: '게임 시작 중 오류가 발생했습니다.',
-                    icon: 'error'
-                });
             });
         }
+        
+        // CSS 애니메이션 추가
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
